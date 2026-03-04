@@ -1,4 +1,4 @@
-module github.com/matheusqcardoso/qpm
+module github.com/MatheusQCardoso/homebrew-qpm
 
 go 1.22
 

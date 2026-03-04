@@ -9,11 +9,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/matheusqcardoso/qpm/internal/fs"
-	"github.com/matheusqcardoso/qpm/internal/git"
-	"github.com/matheusqcardoso/qpm/internal/graph"
-	"github.com/matheusqcardoso/qpm/internal/model"
-	"github.com/matheusqcardoso/qpm/internal/swiftpm"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/graph"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/swiftpm"
 )
 
 type Installer struct {

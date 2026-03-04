@@ -7,9 +7,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/matheusqcardoso/qpm/internal/fs"
-	"github.com/matheusqcardoso/qpm/internal/git"
-	"github.com/matheusqcardoso/qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 )
 
 type GitFetcher struct {

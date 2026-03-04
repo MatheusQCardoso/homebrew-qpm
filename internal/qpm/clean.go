@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/matheusqcardoso/qpm/internal/fs"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 )
 
 type CleanOptions struct {

@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/matheusqcardoso/qpm/internal/qpm"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/qpm"
 )
 
 func main() {

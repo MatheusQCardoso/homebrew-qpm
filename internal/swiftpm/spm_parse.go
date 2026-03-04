@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/matheusqcardoso/qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 )
 
 type SwiftDependency struct {

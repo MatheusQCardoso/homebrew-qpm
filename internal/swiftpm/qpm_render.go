@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/matheusqcardoso/qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 )
 
 func RenderPackageSwiftFromQPM(m model.QpmPackageManifest) ([]byte, error) {

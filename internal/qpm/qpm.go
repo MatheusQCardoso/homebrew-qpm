@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/matheusqcardoso/qpm/internal/fs"
-	"github.com/matheusqcardoso/qpm/internal/graph"
-	"github.com/matheusqcardoso/qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/graph"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 )
 
 type InstallOptions struct {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/matheusqcardoso/qpm/internal/model"
-	"github.com/matheusqcardoso/qpm/internal/swiftpm"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/swiftpm"
 )
 
 type Graph struct {
