@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "a_module": {
+      "type": "qpm",
+      "repo": "http://github.com/a_package",
+      "branch": "my_branch_name",
+      "path": "src/a_module"
+    },
+    "b_module": {
+      "type": "qpm",
+      "repo": "http://github.com/dist/b_package",
+      "tag": "MyTagName"
+    },
+    "ext_module": {
+      "type": "spm",
+      "repo": "http://github.com/ext_dist/ext_module",
+      "tag": "1.0.0"
+    },
+    "local_module_1": {
+      "type": "qpm",
+      "path": "/Users/user/Documents/workspace/project_1/modules"
+    },
+    "local_module_2": {
+      "type": "spm",
+      "path": "/Users/user/Documents/workspace/project_2"
+    }
+  }
+}
+
