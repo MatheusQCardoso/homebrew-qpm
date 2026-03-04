@@ -1,5 +1,11 @@
 # QPM (Quirino's Package Manager)
 
+_A simple Swift Package Manager expansion tool that enables the creation of multiple modules inside the same repo and sparse checkout clones for each resolved module, drastically reducing post-resolution disk usage and maintaining multi-module and monorepo integrity._
+
+_Migrating to SPM from CocoaPods? This is the right tool._
+
+---
+
 `qpm` reads a `Quirino.json` in your project root, resolves all transitive dependencies, and materializes them into a sibling `QPackages/` directory using **sparse git checkouts** (manifest first, then only the referenced target source/test paths).
 
 It also supports **local dependencies** (omit `repo`, provide an absolute `path`), which are materialized by copying the manifest into `QPackages/<ModuleName>/` and **symlinking** the referenced target paths from your local package.
