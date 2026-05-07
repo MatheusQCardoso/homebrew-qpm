@@ -63,10 +63,11 @@ func (s DepSpec) Normalized() DepSpec {
 	out.Type = DependencyType(strings.ToLower(string(out.Type)))
 	out.Repo = strings.TrimSpace(out.Repo)
 	p := strings.TrimSpace(out.Path)
-	// Keep absolute/tilde paths intact for local dependencies.
+	// Keep absolute/tilde/relative paths intact for local dependencies.
 	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") {
 		p = strings.TrimRight(p, "/")
-	} else {
+	} else if !isRelativePath(p) {
+		// Only trim slashes for non-relative paths
 		p = strings.Trim(p, "/")
 	}
 	out.Path = p
@@ -77,6 +78,19 @@ func (s DepSpec) Normalized() DepSpec {
 		out.Type = DependencyTypeQPM
 	}
 	return out
+}
+
+// isRelativePath checks if a path is relative (not absolute, not tilde, but contains . or ..)
+func isRelativePath(p string) bool {
+	if p == "" {
+		return false
+	}
+	// Relative paths contain .. or . but don't start with / or ~
+	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") {
+		return false
+	}
+	// Check for relative path patterns: starts with . or contains /..
+	return strings.HasPrefix(p, ".") || strings.HasPrefix(p, "./") || strings.Contains(p, "/..")
 }
 
 func (s DepSpec) Validate() error {
@@ -95,15 +109,16 @@ func (s DepSpec) Validate() error {
 		return nil
 	}
 
-	// Local dependency: requires an absolute (or ~) path and no ref.
+	// Local dependency: requires path (absolute, ~, or relative) and no ref.
 	if s.Path == "" {
 		return fmt.Errorf("either repo (remote) or path (local) is required")
 	}
 	if s.Branch != "" || s.Tag != "" || s.Revision != "" {
 		return fmt.Errorf("local dependency cannot specify branch/tag/revision")
 	}
-	if !strings.HasPrefix(s.Path, "/") && !strings.HasPrefix(s.Path, "~") {
-		return fmt.Errorf("local dependency path must be absolute (or start with ~): %q", s.Path)
+	// Accept absolute paths, tilde paths, and relative paths
+	if !strings.HasPrefix(s.Path, "/") && !strings.HasPrefix(s.Path, "~") && !isRelativePath(s.Path) {
+		return fmt.Errorf("local dependency path must be absolute (or start with ~) or relative (starting with . or ..): %q", s.Path)
 	}
 	return nil
 }

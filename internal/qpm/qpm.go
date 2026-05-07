@@ -44,7 +44,8 @@ func BuildGraphJSON(ctx context.Context, opt BuildGraphOptions) ([]byte, error) 
 		return nil, err
 	}
 
-	fetcher := NewGitFetcher(packagesDir, NopLogger{})
+	basePath := filepath.Dir(opt.QuirinoJSONPath)
+	fetcher := NewGitFetcher(packagesDir, basePath, NopLogger{})
 	g, err := graph.Build(ctx, m, fetcher)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,8 @@ func Install(ctx context.Context, opt InstallOptions) error {
 	}
 
 	log.Infof("building dependency graph...")
-	fetcher := NewGitFetcher(packagesDir, log)
+	basePath := filepath.Dir(opt.QuirinoJSONPath)
+	fetcher := NewGitFetcher(packagesDir, basePath, log)
 	g, err := graph.Build(ctx, m, fetcher)
 	if err != nil {
 		return err

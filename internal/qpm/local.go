@@ -14,6 +14,32 @@ type LocalPackage struct {
 	ManifestPath string
 }
 
+// resolveRelativePath resolves a relative path against a base directory
+func resolveRelativePath(relativePath string, baseDir string) (string, error) {
+	// Clean up the inputs
+	relativePath = strings.TrimSpace(relativePath)
+	baseDir = strings.TrimSpace(baseDir)
+
+	if relativePath == "" {
+		return "", fmt.Errorf("relative path is required")
+	}
+	if baseDir == "" {
+		return "", fmt.Errorf("base directory is required for relative path resolution")
+	}
+
+	// Convert relative path to absolute using the base directory
+	resolved := filepath.Join(baseDir, relativePath)
+	// Clean the path to handle .. and . correctly
+	resolved = filepath.Clean(resolved)
+
+	// Verify the resolved path actually exists
+	if _, err := os.Stat(resolved); err != nil {
+		return "", fmt.Errorf("relative path %q resolves to %q which doesn't exist: %w", relativePath, resolved, err)
+	}
+
+	return resolved, nil
+}
+
 func ResolveLocalQpmManifest(moduleName string, basePath string) (LocalPackage, error) {
 	basePath, err := expandTilde(basePath)
 	if err != nil {

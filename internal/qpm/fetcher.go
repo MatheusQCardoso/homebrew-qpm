@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
@@ -14,11 +15,12 @@ import (
 
 type GitFetcher struct {
 	cacheDir string
+	basePath string // Directory of Quirino.json for resolving relative paths
 	git      git.Runner
 	log      Logger
 }
 
-func NewGitFetcher(packagesDir string, log Logger) *GitFetcher {
+func NewGitFetcher(packagesDir string, basePath string, log Logger) *GitFetcher {
 	cacheDir := filepath.Join(packagesDir, ".qpm-cache")
 	_ = fs.EnsureDir(cacheDir)
 	if log == nil {
@@ -26,6 +28,7 @@ func NewGitFetcher(packagesDir string, log Logger) *GitFetcher {
 	}
 	return &GitFetcher{
 		cacheDir: cacheDir,
+		basePath: basePath,
 		git:      git.Runner{Verbose: log.VerboseEnabled()},
 		log:      log,
 	}
@@ -35,7 +38,22 @@ func (f *GitFetcher) FetchQpmPackageJSON(ctx context.Context, moduleName string,
 	spec = spec.Normalized()
 	if spec.Repo == "" {
 		f.log.Infof("resolve %s (local qpm): %s", moduleName, spec.Path)
-		lp, err := ResolveLocalQpmManifest(moduleName, spec.Path)
+		
+		// Handle relative paths by resolving them relative to basePath
+		resolvePath := spec.Path
+		if isRelativePathStr(spec.Path) {
+			if f.basePath == "" {
+				return nil, fmt.Errorf("relative path %q requires basePath to be set", spec.Path)
+			}
+			resolved, err := resolveRelativePath(spec.Path, f.basePath)
+			if err != nil {
+				return nil, err
+			}
+			resolvePath = resolved
+			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolved)
+		}
+		
+		lp, err := ResolveLocalQpmManifest(moduleName, resolvePath)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +69,22 @@ func (f *GitFetcher) FetchSpmPackageSwift(ctx context.Context, moduleName string
 	spec = spec.Normalized()
 	if spec.Repo == "" {
 		f.log.Infof("resolve %s (local spm): %s", moduleName, spec.Path)
-		lp, err := ResolveLocalSpmManifest(spec.Path)
+		
+		// Handle relative paths by resolving them relative to basePath
+		resolvePath := spec.Path
+		if isRelativePathStr(spec.Path) {
+			if f.basePath == "" {
+				return nil, fmt.Errorf("relative path %q requires basePath to be set", spec.Path)
+			}
+			resolved, err := resolveRelativePath(spec.Path, f.basePath)
+			if err != nil {
+				return nil, err
+			}
+			resolvePath = resolved
+			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolved)
+		}
+		
+		lp, err := ResolveLocalSpmManifest(resolvePath)
 		if err != nil {
 			return nil, err
 		}
@@ -117,6 +150,19 @@ func pickRef(spec model.DepSpec) string {
 	default:
 		return ""
 	}
+}
+
+// isRelativePathStr checks if a path string is relative (not absolute, not tilde)
+func isRelativePathStr(p string) bool {
+	if p == "" {
+		return false
+	}
+	// Relative paths don't start with / or ~
+	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") {
+		return false
+	}
+	// Check for relative path patterns: starts with . or contains /..
+	return strings.HasPrefix(p, ".") || strings.HasPrefix(p, "./") || strings.Contains(p, "/..")
 }
 
 func (f *GitFetcher) String() string {
