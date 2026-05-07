@@ -1,3 +1,7 @@
+.vscode/
 old_releases/
+build/
+
 *.tar.gz
 qpm-*
+Makefile
