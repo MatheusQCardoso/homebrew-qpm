@@ -3,7 +3,10 @@ package graph
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/swiftpm"
@@ -84,6 +87,15 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 			}
 			for depName, depSpec := range pm.Package.Dependencies {
 				ds := depSpec.Normalized()
+				
+				if ds.Repo == "" && isRelativePathStr(ds.Path) && spec.Repo == "" {
+					resolvedPath, err := resolveRelativePath(ds.Path, spec.Path)
+					if err != nil {
+						return nil, fmt.Errorf("%s dependency %s: %w", name, depName, err)
+					}
+					ds.Path = resolvedPath
+				}
+				
 				if err := ds.Validate(); err != nil {
 					return nil, fmt.Errorf("%s dependency %s: %w", name, depName, err)
 				}
@@ -92,7 +104,6 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 					g.Nodes[depName] = ds
 					queue = append(queue, depName)
 				} else {
-					// Rule 2.1: keep uppermost spec already in Nodes.
 					queue = append(queue, depName)
 				}
 			}
@@ -111,9 +122,19 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 				return nil, err
 			}
 			for _, d := range deps {
+				ds := d.Spec.Normalized()
+				
+				if ds.Repo == "" && isRelativePathStr(ds.Path) && spec.Repo == "" {
+					resolvedPath, err := resolveRelativePath(ds.Path, spec.Path)
+					if err != nil {
+						return nil, fmt.Errorf("%s dependency %s: %w", name, d.Name, err)
+					}
+					ds.Path = resolvedPath
+				}
+				
 				g.Edges[name] = appendUnique(g.Edges[name], d.Name)
 				if _, exists := g.Nodes[d.Name]; !exists {
-					g.Nodes[d.Name] = d.Spec.Normalized()
+					g.Nodes[d.Name] = ds
 					queue = append(queue, d.Name)
 				} else {
 					queue = append(queue, d.Name)
@@ -124,7 +145,6 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 		}
 	}
 
-	// Deterministic edges.
 	for from, tos := range g.Edges {
 		sort.Strings(tos)
 		g.Edges[from] = uniqueSorted(tos)
@@ -180,5 +200,33 @@ func uniqueSorted(in []string) []string {
 		prev = s
 	}
 	return out
+}
+
+func resolveRelativePath(relativePath string, baseDir string) (string, error) {
+	relativePath = strings.TrimSpace(relativePath)
+	baseDir = strings.TrimSpace(baseDir)
+
+	if relativePath == "" {
+		return "", fmt.Errorf("relative path is required")
+	}
+	if baseDir == "" {
+		return "", fmt.Errorf("base directory is required for relative path resolution")
+	}
+
+	resolved := filepath.Join(baseDir, relativePath)
+	resolved = filepath.Clean(resolved)
+
+	if _, err := os.Stat(resolved); err != nil {
+		return "", fmt.Errorf("relative path %q resolves to %q which doesn't exist: %w", relativePath, resolved, err)
+	}
+
+	return resolved, nil
+}
+
+func isRelativePathStr(p string) bool {
+	if p == "" {
+		return false
+	}
+	return !strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "~")
 }
 

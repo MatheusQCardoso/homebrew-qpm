@@ -40,7 +40,7 @@ func run(ctx context.Context, args []string) int {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, `NAME
+	fmt.Fprint(w, `NAME
   qpm - Quirino's Package Manager
 
 SYNOPSIS
