@@ -143,7 +143,7 @@ At most **one** of `branch`, `tag`, or `revision` may be set.
 
 - **Remote dependency**: `repo` is set.
 - **Local dependency**: `repo` is omitted and `path` is required.
-  - Local `path` must be **absolute** or start with `~`.
+  - Local `path` can be **absolute**, start with `~`, or be **relative** to the `Quirino.json` directory.
   - Local dependencies cannot specify `branch`/`tag`/`revision`.
 
 ### Examples
@@ -204,13 +204,15 @@ This expects `Package.swift` at the repo root.
   "dependencies": {
     "MyModule": {
       "type": "qpm",
-      "path": "/Users/me/work/monorepo"
+      "path": "../shared-modules"
     }
   }
 }
 ```
 
 QPM will search (recursively) under the given path for `MyModule.Package.json` (skipping `.git`, `.build`, `DerivedData`, `node_modules`).
+
+Relative paths are resolved relative to the module's Package.json itself. Plain directory names like `"path": "my_modules"` are also supported and treated as relative paths.
 
 #### Local SwiftPM module
 
