@@ -1,14 +1,14 @@
 class Qpm < Formula
   desc "Quirino's Package Manager"
   homepage "https://github.com/MatheusQCardoso/homebrew-qpm/"
-  version "1.1.0"
+  version "1.1.1"
 
   if Hardware::CPU.arm?
-    url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/1.1.0/qpm-1.1.0-darwin-arm64.tar.gz"
-    sha256 "a2eccfb9768647497bad33a08fe19a9d3ccf8e5b29a3f216507546f115bc81a5"
+    url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/1.1.1/qpm-1.1.1-darwin-arm64.tar.gz"
+    sha256 "f924ad592fd122043117ec1d4b73d3b24c3553d04197aa5d610e9620e55cec91"
   else
-    url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/1.1.0/qpm-1.1.0-darwin-amd64.tar.gz"
-    sha256 "a55350037466d2938c022200934b9c0ce43bc083052acfc541b7e1d31a73729f"
+    url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/1.1.1/qpm-1.1.1-darwin-amd64.tar.gz"
+    sha256 "d0990f61cf1d9d1347ac2968210c40ab46cf59a03db4cc2923a8ae82f81f7d2d"
   end
 
   def install
