@@ -97,8 +97,8 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		manifestRel := qpmPackageJSONRepoPath(moduleName, spec) // repo-relative
 		i.log.Verbosef("  sparse clone: repo=%s ref=%s paths=%v", spec.Repo, ref, []string{manifestRel})
 		if err := git.SparseClone(ctx, i.git, dstDir, git.SparseCloneOptions{
-			Repo:       spec.Repo,
-			Ref:        ref,
+			Repo:        spec.Repo,
+			Ref:         ref,
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
 			return fmt.Errorf("clone %s: %w", moduleName, err)
@@ -172,8 +172,8 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		manifestRel := spmPackageSwiftRepoPath(spec)
 		i.log.Verbosef("  sparse clone: repo=%s ref=%s paths=%v", spec.Repo, ref, []string{manifestRel})
 		if err := git.SparseClone(ctx, i.git, dstDir, git.SparseCloneOptions{
-			Repo:       spec.Repo,
-			Ref:        ref,
+			Repo:        spec.Repo,
+			Ref:         ref,
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
 			return fmt.Errorf("clone %s: %w", moduleName, err)
@@ -282,6 +282,14 @@ func (i *Installer) installLocalQPM(moduleName string, spec model.DepSpec, dstDi
 	for _, p := range qpmTargetPaths(pm) {
 		src := filepath.Join(lp.RootDir, filepath.FromSlash(filepath.ToSlash(p)))
 		dst := filepath.Join(dstDir, filepath.FromSlash(filepath.ToSlash(p)))
+		src = filepath.Clean(src)
+		if !filepath.IsAbs(src) {
+			var err error
+			src, err = filepath.Abs(src)
+			if err != nil {
+				return err
+			}
+		}
 		i.log.Verbosef("  symlink: %s -> %s", dst, src)
 		if _, err := os.Stat(src); err != nil {
 			return fmt.Errorf("%s: missing local path %s", moduleName, src)
@@ -322,6 +330,14 @@ func (i *Installer) installLocalSPM(moduleName string, spec model.DepSpec, dstDi
 	for _, p := range swiftpm.ParseSPMTargetPaths(updated) {
 		src := filepath.Join(lp.RootDir, filepath.FromSlash(filepath.ToSlash(p)))
 		dst := filepath.Join(dstDir, filepath.FromSlash(filepath.ToSlash(p)))
+		src = filepath.Clean(src)
+		if !filepath.IsAbs(src) {
+			var err error
+			src, err = filepath.Abs(src)
+			if err != nil {
+				return err
+			}
+		}
 		i.log.Verbosef("  symlink: %s -> %s", dst, src)
 		if _, err := os.Stat(src); err != nil {
 			return fmt.Errorf("%s: missing local path %s", moduleName, src)
@@ -467,4 +483,3 @@ func stringsTrimSlash(s string) string {
 	s = strings.TrimSuffix(s, "/")
 	return s
 }
-

@@ -45,8 +45,18 @@ func ResolveLocalQpmManifest(moduleName string, basePath string) (LocalPackage, 
 	if err != nil {
 		return LocalPackage{}, err
 	}
+	if basePath != "" {
+		basePath, err = filepath.Abs(basePath)
+		if err != nil {
+			return LocalPackage{}, err
+		}
+	}
 	filename := moduleName + ".Package.json"
 	p, err := findFile(basePath, filename)
+	if err != nil {
+		return LocalPackage{}, err
+	}
+	p, err = filepath.Abs(p)
 	if err != nil {
 		return LocalPackage{}, err
 	}
@@ -61,7 +71,17 @@ func ResolveLocalSpmManifest(basePath string) (LocalPackage, error) {
 	if err != nil {
 		return LocalPackage{}, err
 	}
+	if basePath != "" {
+		basePath, err = filepath.Abs(basePath)
+		if err != nil {
+			return LocalPackage{}, err
+		}
+	}
 	p, err := findFile(basePath, "Package.swift")
+	if err != nil {
+		return LocalPackage{}, err
+	}
+	p, err = filepath.Abs(p)
 	if err != nil {
 		return LocalPackage{}, err
 	}
@@ -136,4 +156,3 @@ func findFile(basePath string, filename string) (string, error) {
 	}
 	return found, nil
 }
-
