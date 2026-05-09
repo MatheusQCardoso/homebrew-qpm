@@ -113,6 +113,7 @@ func (s DepSpec) Validate() error {
 }
 
 type QuirinoManifest struct {
+	PackagesDir  string             `json:"packagesDir,omitempty"`
 	Dependencies map[string]DepSpec `json:"dependencies"`
 }
 

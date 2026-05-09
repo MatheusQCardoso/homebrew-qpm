@@ -83,9 +83,7 @@ qpm <command> [options]
 
 #### Common (all commands)
 
-- **`--file <path>`**: Path to `Quirino.json` (default: `Quirino.json`)
-- **`--packages-dir <name>`**: Output directory name created next to `Quirino.json` (default: `QPackages`)
-  - Must be a **directory name only** (no path separators, not absolute). QPM enforces that it sits **next to** `Quirino.json`.
+- **`--file <path>`**: Path to `Quirino.json` (default: `./Quirino.json`)
 
 #### `install` only
 
@@ -103,11 +101,14 @@ qpm <command> [options]
 
 `Quirino.json` lives in your project root (or you point `--file` to it). It declares top-level dependencies and is also used to compute where `<packages-dir>/` is created.
 
+You can set the output directory name with the optional `packagesDir` key in `Quirino.json`.
+
 ### Shape
 
 ```json
 {
-  "dependencies": {
+  "packagesDir": "MyPackages", // (optional)
+  "dependencies": { // (required)
     "<ModuleName>": { /* DepSpec */ }
   }
 }

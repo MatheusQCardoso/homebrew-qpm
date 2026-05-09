@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 )
 
 type CleanOptions struct {
@@ -19,7 +20,16 @@ func Clean(ctx context.Context, opt CleanOptions) error {
 		return fmt.Errorf("QuirinoJSONPath is required")
 	}
 
-	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, opt.PackagesDirName)
+	quirinoBytes, err := fs.ReadFile(opt.QuirinoJSONPath)
+	if err != nil {
+		return err
+	}
+	m, err := model.DecodeStrict[model.QuirinoManifest](quirinoBytes, "Quirino.json")
+	if err != nil {
+		return err
+	}
+
+	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, firstNonEmpty(opt.PackagesDirName, m.PackagesDir))
 	if err != nil {
 		return err
 	}

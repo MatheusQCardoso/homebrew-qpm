@@ -22,6 +22,15 @@ type BuildGraphOptions struct {
 	PackagesDirName string
 }
 
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 func BuildGraphJSON(ctx context.Context, opt BuildGraphOptions) ([]byte, error) {
 	if opt.QuirinoJSONPath == "" {
 		return nil, fmt.Errorf("QuirinoJSONPath is required")
@@ -36,7 +45,7 @@ func BuildGraphJSON(ctx context.Context, opt BuildGraphOptions) ([]byte, error) 
 		return nil, err
 	}
 
-	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, opt.PackagesDirName)
+	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, firstNonEmpty(opt.PackagesDirName, m.PackagesDir))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +81,7 @@ func Install(ctx context.Context, opt InstallOptions) error {
 		return err
 	}
 
-	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, opt.PackagesDirName)
+	packagesDir, err := resolvePackagesDir(opt.QuirinoJSONPath, firstNonEmpty(opt.PackagesDirName, m.PackagesDir))
 	if err != nil {
 		return err
 	}

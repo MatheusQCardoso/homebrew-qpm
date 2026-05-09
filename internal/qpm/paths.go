@@ -12,16 +12,16 @@ func resolvePackagesDir(quirinoJSONPath string, packagesDirName string) (string,
 	}
 
 	if filepath.IsAbs(packagesDirName) {
-		return "", fmt.Errorf("--packages-dir must be a directory name next to Quirino.json (got absolute path %q)", packagesDirName)
+		return "", fmt.Errorf("packagesDir must be a directory name next to Quirino.json (got absolute path %q)", packagesDirName)
 	}
 
 	clean := filepath.Clean(packagesDirName)
 	if clean == "." || clean == ".." {
-		return "", fmt.Errorf("--packages-dir must be a directory name (got %q)", packagesDirName)
+		return "", fmt.Errorf("packagesDir must be a directory name (got %q)", packagesDirName)
 	}
 
 	if filepath.Base(clean) != clean || strings.Contains(clean, "/") || strings.Contains(clean, "\\") {
-		return "", fmt.Errorf("--packages-dir must not contain path separators (got %q)", packagesDirName)
+		return "", fmt.Errorf("packagesDir must not contain path separators (got %q)", packagesDirName)
 	}
 
 	workingDir := filepath.Dir(quirinoJSONPath)
