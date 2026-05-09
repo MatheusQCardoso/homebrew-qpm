@@ -48,7 +48,6 @@ func (l *StdLogger) Verbosef(format string, args ...any) {
 
 type NopLogger struct{}
 
-func (NopLogger) Infof(string, ...any)         {}
-func (NopLogger) Verbosef(string, ...any)      {}
-func (NopLogger) VerboseEnabled() bool         { return false }
-
+func (NopLogger) Infof(string, ...any)    {}
+func (NopLogger) Verbosef(string, ...any) {}
+func (NopLogger) VerboseEnabled() bool    { return false }

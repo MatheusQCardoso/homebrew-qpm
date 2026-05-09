@@ -35,33 +35,33 @@ func WriteFile(path string, data []byte) error {
 }
 
 func CopyFile(dst, src string) error {
-	in, err := os.Open(src)
+	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer sourceFile.Close()
 
 	if err := EnsureDir(filepath.Dir(dst)); err != nil {
 		return err
 	}
-	out, err := os.Create(dst)
+	destinationFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = out.Close() }()
+	defer func() { _ = destinationFile.Close() }()
 
-	if _, err := io.Copy(out, in); err != nil {
+	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
 		return err
 	}
-	return out.Close()
+	return destinationFile.Close()
 }
 
 func CopyDir(dst, src string) error {
-	info, err := os.Stat(src)
+	sourceInfo, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
-	if !info.IsDir() {
+	if !sourceInfo.IsDir() {
 		return fmt.Errorf("source is not a directory: %s", src)
 	}
 
@@ -69,22 +69,22 @@ func CopyDir(dst, src string) error {
 		return err
 	}
 
-	entries, err := os.ReadDir(src)
+	directoryEntries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
-	for _, e := range entries {
-		srcPath := filepath.Join(src, e.Name())
-		dstPath := filepath.Join(dst, e.Name())
+	for _, entry := range directoryEntries {
+		sourcePath := filepath.Join(src, entry.Name())
+		destinationPath := filepath.Join(dst, entry.Name())
 
-		if e.IsDir() {
-			if err := CopyDir(dstPath, srcPath); err != nil {
+		if entry.IsDir() {
+			if err := CopyDir(destinationPath, sourcePath); err != nil {
 				return err
 			}
 			continue
 		}
 
-		if err := CopyFile(dstPath, srcPath); err != nil {
+		if err := CopyFile(destinationPath, sourcePath); err != nil {
 			return err
 		}
 	}
@@ -99,4 +99,3 @@ func Symlink(dst, src string) error {
 	_ = os.RemoveAll(dst)
 	return os.Symlink(src, dst)
 }
-

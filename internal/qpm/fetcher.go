@@ -15,19 +15,19 @@ import (
 
 type GitFetcher struct {
 	cacheDir string
-	basePath string // Directory of Quirino.json for resolving relative paths
+	basePath string
 	git      git.Runner
 	log      Logger
 }
 
 func NewGitFetcher(packagesDir string, basePath string, log Logger) *GitFetcher {
-	cacheDir := filepath.Join(packagesDir, ".qpm-cache")
-	_ = fs.EnsureDir(cacheDir)
+	cacheDirectory := filepath.Join(packagesDir, ".qpm-cache")
+	_ = fs.EnsureDir(cacheDirectory)
 	if log == nil {
 		log = NopLogger{}
 	}
 	return &GitFetcher{
-		cacheDir: cacheDir,
+		cacheDir: cacheDirectory,
 		basePath: basePath,
 		git:      git.Runner{Verbose: log.VerboseEnabled()},
 		log:      log,
@@ -38,27 +38,25 @@ func (f *GitFetcher) FetchQpmPackageJSON(ctx context.Context, moduleName string,
 	spec = spec.Normalized()
 	if spec.Repo == "" {
 		f.log.Infof("resolve %s (local qpm): %s", moduleName, spec.Path)
-		
-		// Handle relative paths by resolving them relative to basePath
-		resolvePath := spec.Path
+
+		resolvedPath := spec.Path
 		if isRelativePathStr(spec.Path) {
 			if f.basePath == "" {
 				return nil, fmt.Errorf("relative path %q requires basePath to be set", spec.Path)
 			}
-			resolved, err := resolveRelativePath(spec.Path, f.basePath)
+			resolvedPath, err := resolveRelativePath(spec.Path, f.basePath)
 			if err != nil {
 				return nil, err
 			}
-			resolvePath = resolved
-			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolved)
+			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolvedPath)
 		}
-		
-		lp, err := ResolveLocalQpmManifest(moduleName, resolvePath)
+
+		localPackage, err := ResolveLocalQpmManifest(moduleName, resolvedPath)
 		if err != nil {
 			return nil, err
 		}
-		f.log.Verbosef("  manifest: %s", lp.ManifestPath)
-		return fs.ReadFile(lp.ManifestPath)
+		f.log.Verbosef("  manifest: %s", localPackage.ManifestPath)
+		return fs.ReadFile(localPackage.ManifestPath)
 	}
 	rel := qpmPackageJSONRepoPath(moduleName, spec)
 	f.log.Infof("resolve %s (qpm): %s [%s]", moduleName, spec.Repo, pickRef(spec))
@@ -69,27 +67,25 @@ func (f *GitFetcher) FetchSpmPackageSwift(ctx context.Context, moduleName string
 	spec = spec.Normalized()
 	if spec.Repo == "" {
 		f.log.Infof("resolve %s (local spm): %s", moduleName, spec.Path)
-		
-		// Handle relative paths by resolving them relative to basePath
-		resolvePath := spec.Path
+
+		resolvedPath := spec.Path
 		if isRelativePathStr(spec.Path) {
 			if f.basePath == "" {
 				return nil, fmt.Errorf("relative path %q requires basePath to be set", spec.Path)
 			}
-			resolved, err := resolveRelativePath(spec.Path, f.basePath)
+			resolvedPath, err := resolveRelativePath(spec.Path, f.basePath)
 			if err != nil {
 				return nil, err
 			}
-			resolvePath = resolved
-			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolved)
+			f.log.Verbosef("  resolved relative path: %s -> %s", spec.Path, resolvedPath)
 		}
-		
-		lp, err := ResolveLocalSpmManifest(resolvePath)
+
+		localPackage, err := ResolveLocalSpmManifest(resolvedPath)
 		if err != nil {
 			return nil, err
 		}
-		f.log.Verbosef("  manifest: %s", lp.ManifestPath)
-		return fs.ReadFile(lp.ManifestPath)
+		f.log.Verbosef("  manifest: %s", localPackage.ManifestPath)
+		return fs.ReadFile(localPackage.ManifestPath)
 	}
 	rel := spmPackageSwiftRepoPath(spec)
 	f.log.Infof("resolve %s (spm): %s [%s]", moduleName, spec.Repo, pickRef(spec))
@@ -102,27 +98,27 @@ func (f *GitFetcher) fetchFile(ctx context.Context, spec model.DepSpec, repoRelP
 		return nil, err
 	}
 
-	tmpRoot, err := os.MkdirTemp(f.cacheDir, "fetch-*")
+	temporaryRoot, err := os.MkdirTemp(f.cacheDir, "fetch-*")
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = os.RemoveAll(tmpRoot) }()
+	defer func() { _ = os.RemoveAll(temporaryRoot) }()
 
-	cloneDir := filepath.Join(tmpRoot, "repo")
+	cloneDirectory := filepath.Join(temporaryRoot, "repo")
 
 	ref := pickRef(spec)
 	f.log.Verbosef("  sparse fetch: %s (ref=%s) paths=%v", spec.Repo, ref, []string{repoRelPath})
-	if err := git.SparseClone(ctx, f.git, cloneDir, git.SparseCloneOptions{
-		Repo:       spec.Repo,
-		Ref:        ref,
+	if err := git.SparseClone(ctx, f.git, cloneDirectory, git.SparseCloneOptions{
+		Repo:        spec.Repo,
+		Ref:         ref,
 		SparsePaths: []string{repoRelPath},
 	}); err != nil {
 		return nil, err
 	}
 
-	localPath := filepath.Join(cloneDir, filepath.FromSlash(repoRelPath))
-	f.log.Verbosef("  fetched file: %s", localPath)
-	return fs.ReadFile(localPath)
+	localFilePath := filepath.Join(cloneDirectory, filepath.FromSlash(repoRelPath))
+	f.log.Verbosef("  fetched file: %s", localFilePath)
+	return fs.ReadFile(localFilePath)
 }
 
 func qpmPackageJSONRepoPath(moduleName string, spec model.DepSpec) string {
@@ -152,20 +148,16 @@ func pickRef(spec model.DepSpec) string {
 	}
 }
 
-// isRelativePathStr checks if a path string is relative (not absolute, not tilde)
-func isRelativePathStr(p string) bool {
-	if p == "" {
+func isRelativePathStr(pathString string) bool {
+	if pathString == "" {
 		return false
 	}
-	// Relative paths don't start with / or ~
-	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") {
+	if strings.HasPrefix(pathString, "/") || strings.HasPrefix(pathString, "~") {
 		return false
 	}
-	// Check for relative path patterns: starts with . or contains /..
-	return strings.HasPrefix(p, ".") || strings.HasPrefix(p, "./") || strings.Contains(p, "/..")
+	return strings.HasPrefix(pathString, ".") || strings.HasPrefix(pathString, "./") || strings.Contains(pathString, "/..")
 }
 
 func (f *GitFetcher) String() string {
 	return fmt.Sprintf("GitFetcher(cacheDir=%s)", f.cacheDir)
 }
-

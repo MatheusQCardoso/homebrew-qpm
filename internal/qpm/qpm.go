@@ -90,7 +90,6 @@ func Install(ctx context.Context, opt InstallOptions) error {
 	}
 	log.Infof("resolved %d packages", len(g.Nodes))
 
-	// Persist the graph for debugging/reproducibility.
 	lockPath := filepath.Join(packagesDir, "qpm.lock.json")
 	lockJSON, err := json.MarshalIndent(g, "", "  ")
 	if err != nil {
@@ -109,4 +108,3 @@ func Install(ctx context.Context, opt InstallOptions) error {
 	log.Infof("done")
 	return nil
 }
-

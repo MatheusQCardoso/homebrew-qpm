@@ -18,167 +18,166 @@ func RenderPackageSwiftFromQPM(m model.QpmPackageManifest) ([]byte, error) {
 		return nil, fmt.Errorf("missing package.name")
 	}
 
-	var out bytes.Buffer
+	var buffer bytes.Buffer
 
-	out.WriteString("// swift-tools-version: ")
-	out.WriteString(strings.TrimSpace(m.SwiftToolsVersion))
-	out.WriteString("\n")
-	out.WriteString("import PackageDescription\n")
+	buffer.WriteString("// swift-tools-version: ")
+	buffer.WriteString(strings.TrimSpace(m.SwiftToolsVersion))
+	buffer.WriteString("\n")
+	buffer.WriteString("import PackageDescription\n")
 
 	if strings.TrimSpace(m.Version) != "" {
-		out.WriteString("let version = ")
-		out.WriteString(strconv.Quote(strings.TrimSpace(m.Version)))
-		out.WriteString("\n")
+		buffer.WriteString("let version = ")
+		buffer.WriteString(strconv.Quote(strings.TrimSpace(m.Version)))
+		buffer.WriteString("\n")
 	}
 
-	out.WriteString("let package = Package(\n")
-	out.WriteString("    name: ")
-	out.WriteString(strconv.Quote(m.Package.Name))
-	out.WriteString(",\n")
+	buffer.WriteString("let package = Package(\n")
+	buffer.WriteString("    name: ")
+	buffer.WriteString(strconv.Quote(m.Package.Name))
+	buffer.WriteString(",\n")
 
-	iosMajor := parseIOSMajor(m.Package.MinIOSVersion)
-	out.WriteString("    platforms: [\n")
-	out.WriteString("        .iOS(.v")
-	out.WriteString(strconv.Itoa(iosMajor))
-	out.WriteString(")\n")
-	out.WriteString("    ],\n")
+	iosMajorVersion := parseIOSMajor(m.Package.MinIOSVersion)
+	buffer.WriteString("    platforms: [\n")
+	buffer.WriteString("        .iOS(.v")
+	buffer.WriteString(strconv.Itoa(iosMajorVersion))
+	buffer.WriteString(")\n")
+	buffer.WriteString("    ],\n")
 
-	out.WriteString("    products: [\n")
-	for i, p := range m.Package.Products {
-		if strings.ToLower(p.Type) != "library" {
-			return nil, fmt.Errorf("unsupported product type %q", p.Type)
+	buffer.WriteString("    products: [\n")
+	for index, product := range m.Package.Products {
+		if strings.ToLower(product.Type) != "library" {
+			return nil, fmt.Errorf("unsupported product type %q", product.Type)
 		}
-		out.WriteString("        .library(\n")
-		out.WriteString("            name: ")
-		out.WriteString(strconv.Quote(p.Name))
-		out.WriteString(",\n")
-		out.WriteString("            targets: [")
-		for j, t := range p.Targets {
-			if j > 0 {
-				out.WriteString(", ")
+		buffer.WriteString("        .library(\n")
+		buffer.WriteString("            name: ")
+		buffer.WriteString(strconv.Quote(product.Name))
+		buffer.WriteString(",\n")
+		buffer.WriteString("            targets: [")
+		for targetIndex, target := range product.Targets {
+			if targetIndex > 0 {
+				buffer.WriteString(", ")
 			}
-			out.WriteString(strconv.Quote(t))
+			buffer.WriteString(strconv.Quote(target))
 		}
-		out.WriteString("]\n")
-		out.WriteString("        )")
-		if i < len(m.Package.Products)-1 {
-			out.WriteString(",")
+		buffer.WriteString("]\n")
+		buffer.WriteString("        )")
+		if index < len(m.Package.Products)-1 {
+			buffer.WriteString(",")
 		}
-		out.WriteString("\n")
+		buffer.WriteString("\n")
 	}
-	out.WriteString("    ],\n")
+	buffer.WriteString("    ],\n")
 
-	depNames := make([]string, 0, len(m.Package.Dependencies))
-	for name := range m.Package.Dependencies {
-		depNames = append(depNames, name)
+	dependencyNames := make([]string, 0, len(m.Package.Dependencies))
+	for dependencyName := range m.Package.Dependencies {
+		dependencyNames = append(dependencyNames, dependencyName)
 	}
-	sort.Strings(depNames)
+	sort.Strings(dependencyNames)
 
-	out.WriteString("    dependencies: [\n")
-	for i, dep := range depNames {
-		out.WriteString("        .package(path: ")
-		out.WriteString(strconv.Quote("../" + dep))
-		out.WriteString(")")
-		if i < len(depNames)-1 {
-			out.WriteString(",")
+	buffer.WriteString("    dependencies: [\n")
+	for index, dependency := range dependencyNames {
+		buffer.WriteString("        .package(path: ")
+		buffer.WriteString(strconv.Quote("../" + dependency))
+		buffer.WriteString(")")
+		if index < len(dependencyNames)-1 {
+			buffer.WriteString(",")
 		}
-		out.WriteString("\n")
+		buffer.WriteString("\n")
 	}
-	out.WriteString("    ],\n")
+	buffer.WriteString("    ],\n")
 
 	localTargetNames := map[string]bool{}
-	for name := range m.Package.Targets {
-		localTargetNames[name] = true
+	for targetName := range m.Package.Targets {
+		localTargetNames[targetName] = true
 	}
-	for name := range m.Package.TestTargets {
-		localTargetNames[name] = true
+	for testTargetName := range m.Package.TestTargets {
+		localTargetNames[testTargetName] = true
 	}
 
-	out.WriteString("    targets: [\n")
+	buffer.WriteString("    targets: [\n")
 
 	targetNames := make([]string, 0, len(m.Package.Targets))
-	for name := range m.Package.Targets {
-		targetNames = append(targetNames, name)
+	for targetName := range m.Package.Targets {
+		targetNames = append(targetNames, targetName)
 	}
 	sort.Strings(targetNames)
 
-	for _, name := range targetNames {
-		t := m.Package.Targets[name]
-		out.WriteString("        .target(\n")
-		out.WriteString("            name: ")
-		out.WriteString(strconv.Quote(name))
-		out.WriteString(",\n")
-		out.WriteString("            dependencies: [\n")
-		for j, dep := range t.Dependencies {
-			out.WriteString("                ")
-			out.WriteString(renderTargetDependency(dep, localTargetNames))
-			if j < len(t.Dependencies)-1 {
-				out.WriteString(",")
+	for _, targetName := range targetNames {
+		target := m.Package.Targets[targetName]
+		buffer.WriteString("        .target(\n")
+		buffer.WriteString("            name: ")
+		buffer.WriteString(strconv.Quote(targetName))
+		buffer.WriteString(",\n")
+		buffer.WriteString("            dependencies: [\n")
+		for dependencyIndex, dependency := range target.Dependencies {
+			buffer.WriteString("                ")
+			buffer.WriteString(renderTargetDependency(dependency, localTargetNames))
+			if dependencyIndex < len(target.Dependencies)-1 {
+				buffer.WriteString(",")
 			}
-			out.WriteString("\n")
+			buffer.WriteString("\n")
 		}
-		out.WriteString("            ],\n")
-		out.WriteString("            path: ")
-		out.WriteString(strconv.Quote(t.Path))
-		out.WriteString("\n")
-		out.WriteString("        ),\n")
+		buffer.WriteString("            ],\n")
+		buffer.WriteString("            path: ")
+		buffer.WriteString(strconv.Quote(target.Path))
+		buffer.WriteString("\n")
+		buffer.WriteString("        ),\n")
 	}
 
-	testNames := make([]string, 0, len(m.Package.TestTargets))
-	for name := range m.Package.TestTargets {
-		testNames = append(testNames, name)
+	testTargetNames := make([]string, 0, len(m.Package.TestTargets))
+	for testTargetName := range m.Package.TestTargets {
+		testTargetNames = append(testTargetNames, testTargetName)
 	}
-	sort.Strings(testNames)
+	sort.Strings(testTargetNames)
 
-	for idx, name := range testNames {
-		t := m.Package.TestTargets[name]
-		out.WriteString("        .testTarget(\n")
-		out.WriteString("            name: ")
-		out.WriteString(strconv.Quote(name))
-		out.WriteString(",\n")
-		out.WriteString("            dependencies: [\n")
-		for j, dep := range t.Dependencies {
-			out.WriteString("                ")
-			out.WriteString(renderTargetDependency(dep, localTargetNames))
-			if j < len(t.Dependencies)-1 {
-				out.WriteString(",")
+	for index, testTargetName := range testTargetNames {
+		testTarget := m.Package.TestTargets[testTargetName]
+		buffer.WriteString("        .testTarget(\n")
+		buffer.WriteString("            name: ")
+		buffer.WriteString(strconv.Quote(testTargetName))
+		buffer.WriteString(",\n")
+		buffer.WriteString("            dependencies: [\n")
+		for dependencyIndex, dependency := range testTarget.Dependencies {
+			buffer.WriteString("                ")
+			buffer.WriteString(renderTargetDependency(dependency, localTargetNames))
+			if dependencyIndex < len(testTarget.Dependencies)-1 {
+				buffer.WriteString(",")
 			}
-			out.WriteString("\n")
+			buffer.WriteString("\n")
 		}
-		out.WriteString("            ],\n")
-		out.WriteString("            path: ")
-		out.WriteString(strconv.Quote(t.Path))
-		out.WriteString("\n")
-		out.WriteString("        )")
-		if idx < len(testNames)-1 {
-			out.WriteString(",")
+		buffer.WriteString("            ],\n")
+		buffer.WriteString("            path: ")
+		buffer.WriteString(strconv.Quote(testTarget.Path))
+		buffer.WriteString("\n")
+		buffer.WriteString("        )")
+		if index < len(testTargetNames)-1 {
+			buffer.WriteString(",")
 		}
-		out.WriteString("\n")
+		buffer.WriteString("\n")
 	}
 
-	out.WriteString("    ]\n")
-	out.WriteString(")\n")
+	buffer.WriteString("    ]\n")
+	buffer.WriteString(")\n")
 
-	return out.Bytes(), nil
+	return buffer.Bytes(), nil
 }
 
-func renderTargetDependency(dep string, localTargets map[string]bool) string {
-	if localTargets[dep] {
-		return fmt.Sprintf(".target(name: %s)", strconv.Quote(dep))
+func renderTargetDependency(dependency string, localTargets map[string]bool) string {
+	if localTargets[dependency] {
+		return fmt.Sprintf(".target(name: %s)", strconv.Quote(dependency))
 	}
-	return fmt.Sprintf(".product(name: %s, package: %s)", strconv.Quote(dep), strconv.Quote(dep))
+	return fmt.Sprintf(".product(name: %s, package: %s)", strconv.Quote(dependency), strconv.Quote(dependency))
 }
 
-func parseIOSMajor(v string) int {
-	v = strings.TrimSpace(v)
-	if v == "" {
+func parseIOSMajor(version string) int {
+	version = strings.TrimSpace(version)
+	if version == "" {
 		return 15
 	}
-	parts := strings.Split(v, ".")
+	parts := strings.Split(version, ".")
 	major, err := strconv.Atoi(parts[0])
 	if err != nil || major <= 0 {
 		return 15
 	}
 	return major
 }
-

@@ -87,7 +87,7 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 			}
 			for depName, depSpec := range pm.Package.Dependencies {
 				ds := depSpec.Normalized()
-				
+
 				if ds.Repo == "" && isRelativePathStr(ds.Path) && spec.Repo == "" {
 					resolvedPath, err := resolveRelativePath(ds.Path, spec.Path)
 					if err != nil {
@@ -95,7 +95,7 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 					}
 					ds.Path = resolvedPath
 				}
-				
+
 				if err := ds.Validate(); err != nil {
 					return nil, fmt.Errorf("%s dependency %s: %w", name, depName, err)
 				}
@@ -123,7 +123,7 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 			}
 			for _, d := range deps {
 				ds := d.Spec.Normalized()
-				
+
 				if ds.Repo == "" && isRelativePathStr(ds.Path) && spec.Repo == "" {
 					resolvedPath, err := resolveRelativePath(ds.Path, spec.Path)
 					if err != nil {
@@ -131,7 +131,7 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 					}
 					ds.Path = resolvedPath
 				}
-				
+
 				g.Edges[name] = appendUnique(g.Edges[name], d.Name)
 				if _, exists := g.Nodes[d.Name]; !exists {
 					g.Nodes[d.Name] = ds
@@ -229,4 +229,3 @@ func isRelativePathStr(p string) bool {
 	}
 	return !strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "~")
 }
-

@@ -14,9 +14,7 @@ type LocalPackage struct {
 	ManifestPath string
 }
 
-// resolveRelativePath resolves a relative path against a base directory
 func resolveRelativePath(relativePath string, baseDir string) (string, error) {
-	// Clean up the inputs
 	relativePath = strings.TrimSpace(relativePath)
 	baseDir = strings.TrimSpace(baseDir)
 
@@ -27,12 +25,9 @@ func resolveRelativePath(relativePath string, baseDir string) (string, error) {
 		return "", fmt.Errorf("base directory is required for relative path resolution")
 	}
 
-	// Convert relative path to absolute using the base directory
 	resolved := filepath.Join(baseDir, relativePath)
-	// Clean the path to handle .. and . correctly
 	resolved = filepath.Clean(resolved)
 
-	// Verify the resolved path actually exists
 	if _, err := os.Stat(resolved); err != nil {
 		return "", fmt.Errorf("relative path %q resolves to %q which doesn't exist: %w", relativePath, resolved, err)
 	}
@@ -124,7 +119,6 @@ func findFile(basePath string, filename string) (string, error) {
 		return "", fmt.Errorf("expected %s but got file %s", filename, basePath)
 	}
 
-	// First: direct child.
 	direct := filepath.Join(basePath, filename)
 	if _, err := os.Stat(direct); err == nil {
 		return direct, nil

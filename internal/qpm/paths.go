@@ -20,7 +20,6 @@ func resolvePackagesDir(quirinoJSONPath string, packagesDirName string) (string,
 		return "", fmt.Errorf("--packages-dir must be a directory name (got %q)", packagesDirName)
 	}
 
-	// Enforce "same level as Quirino.json": disallow any path separators.
 	if filepath.Base(clean) != clean || strings.Contains(clean, "/") || strings.Contains(clean, "\\") {
 		return "", fmt.Errorf("--packages-dir must not contain path separators (got %q)", packagesDirName)
 	}
@@ -28,4 +27,3 @@ func resolvePackagesDir(quirinoJSONPath string, packagesDirName string) (string,
 	workingDir := filepath.Dir(quirinoJSONPath)
 	return filepath.Join(workingDir, clean), nil
 }
-

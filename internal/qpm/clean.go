@@ -33,4 +33,3 @@ func Clean(ctx context.Context, opt CleanOptions) error {
 
 	return fs.RemoveAll(packagesDir)
 }
-

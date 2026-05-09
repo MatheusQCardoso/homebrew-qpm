@@ -154,4 +154,3 @@ func runClean(ctx context.Context, args []string) int {
 	}
 	return 0
 }
-

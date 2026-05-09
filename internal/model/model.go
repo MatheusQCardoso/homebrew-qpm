@@ -59,23 +59,23 @@ type DepSpec struct {
 }
 
 func (s DepSpec) Normalized() DepSpec {
-	out := s
-	out.Type = DependencyType(strings.ToLower(string(out.Type)))
-	out.Repo = strings.TrimSpace(out.Repo)
-	p := strings.TrimSpace(out.Path)
-	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") {
-		p = strings.TrimRight(p, "/")
-	} else if !isRelativePath(p) {
-		p = strings.Trim(p, "/")
+	normalizedSpec := s
+	normalizedSpec.Type = DependencyType(strings.ToLower(string(normalizedSpec.Type)))
+	normalizedSpec.Repo = strings.TrimSpace(normalizedSpec.Repo)
+	path := strings.TrimSpace(normalizedSpec.Path)
+	if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "~") {
+		path = strings.TrimRight(path, "/")
+	} else if !isRelativePath(path) {
+		path = strings.Trim(path, "/")
 	}
-	out.Path = p
-	out.Branch = strings.TrimSpace(out.Branch)
-	out.Tag = strings.TrimSpace(out.Tag)
-	out.Revision = strings.TrimSpace(out.Revision)
-	if out.Type == "" {
-		out.Type = DependencyTypeQPM
+	normalizedSpec.Path = path
+	normalizedSpec.Branch = strings.TrimSpace(normalizedSpec.Branch)
+	normalizedSpec.Tag = strings.TrimSpace(normalizedSpec.Tag)
+	normalizedSpec.Revision = strings.TrimSpace(normalizedSpec.Revision)
+	if normalizedSpec.Type == "" {
+		normalizedSpec.Type = DependencyTypeQPM
 	}
-	return out
+	return normalizedSpec
 }
 
 func isRelativePath(p string) bool {
@@ -86,28 +86,28 @@ func isRelativePath(p string) bool {
 }
 
 func (s DepSpec) Validate() error {
-	s = s.Normalized()
-	if err := s.Ref.Validate(); err != nil {
+	spec := s.Normalized()
+	if err := spec.Ref.Validate(); err != nil {
 		return err
 	}
-	switch s.Type {
+	switch spec.Type {
 	case DependencyTypeQPM, DependencyTypeSPM:
 	default:
-		return fmt.Errorf("unsupported type %q (supported: %q, %q)", s.Type, DependencyTypeQPM, DependencyTypeSPM)
+		return fmt.Errorf("unsupported type %q (supported: %q, %q)", spec.Type, DependencyTypeQPM, DependencyTypeSPM)
 	}
 
-	if s.Repo != "" {
+	if spec.Repo != "" {
 		return nil
 	}
 
-	if s.Path == "" {
+	if spec.Path == "" {
 		return fmt.Errorf("either repo (remote) or path (local) is required")
 	}
-	if s.Branch != "" || s.Tag != "" || s.Revision != "" {
+	if spec.Branch != "" || spec.Tag != "" || spec.Revision != "" {
 		return fmt.Errorf("local dependency cannot specify branch/tag/revision")
 	}
-	if !strings.HasPrefix(s.Path, "/") && !strings.HasPrefix(s.Path, "~") && !isRelativePath(s.Path) {
-		return fmt.Errorf("local dependency path must be absolute (or start with ~) or relative: %q", s.Path)
+	if !strings.HasPrefix(spec.Path, "/") && !strings.HasPrefix(spec.Path, "~") && !isRelativePath(spec.Path) {
+		return fmt.Errorf("local dependency path must be absolute (or start with ~) or relative: %q", spec.Path)
 	}
 	return nil
 }
@@ -117,22 +117,22 @@ type QuirinoManifest struct {
 }
 
 type QpmPackageManifest struct {
-	SwiftToolsVersion string                   `json:"swift-tools-version"`
-	Version           string                   `json:"version"`
-	Package           QpmPackageDeclaration    `json:"package"`
+	SwiftToolsVersion string                `json:"swift-tools-version"`
+	Version           string                `json:"version"`
+	Package           QpmPackageDeclaration `json:"package"`
 }
 
 type QpmPackageDeclaration struct {
-	Name          string                    `json:"name"`
-	MinIOSVersion string                    `json:"min-ios-version"`
-	Products      []QpmProduct              `json:"products"`
-	Dependencies  map[string]DepSpec        `json:"dependencies"`
-	Targets       map[string]QpmTarget      `json:"targets"`
-	TestTargets   map[string]QpmTestTarget  `json:"testTargets"`
+	Name          string                   `json:"name"`
+	MinIOSVersion string                   `json:"min-ios-version"`
+	Products      []QpmProduct             `json:"products"`
+	Dependencies  map[string]DepSpec       `json:"dependencies"`
+	Targets       map[string]QpmTarget     `json:"targets"`
+	TestTargets   map[string]QpmTestTarget `json:"testTargets"`
 }
 
 type QpmProduct struct {
-	Type    string   `json:"type"` // library
+	Type    string   `json:"type"`
 	Name    string   `json:"name"`
 	Targets []string `json:"targets"`
 }
@@ -148,18 +148,17 @@ type QpmTestTarget struct {
 }
 
 func DecodeStrict[T any](b []byte, label string) (T, error) {
-	var zero T
-	dec := json.NewDecoder(bytes.NewReader(b))
-	if err := dec.Decode(&zero); err != nil {
-		return zero, fmt.Errorf("%s: %w", label, err)
+	var result T
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	if err := decoder.Decode(&result); err != nil {
+		return result, fmt.Errorf("%s: %w", label, err)
 	}
-	var extra any
-	if err := dec.Decode(&extra); err != io.EOF {
+	var extraContent any
+	if err := decoder.Decode(&extraContent); err != io.EOF {
 		if err == nil {
-			return zero, fmt.Errorf("%s: unexpected extra JSON content", label)
+			return result, fmt.Errorf("%s: unexpected extra JSON content", label)
 		}
-		return zero, fmt.Errorf("%s: %w", label, err)
+		return result, fmt.Errorf("%s: %w", label, err)
 	}
-	return zero, nil
+	return result, nil
 }
-

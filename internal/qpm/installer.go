@@ -94,7 +94,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			i.log.Verbosef("  local qpm root: %s", spec.Path)
 			return i.installLocalQPM(moduleName, spec, dstDir)
 		}
-		manifestRel := qpmPackageJSONRepoPath(moduleName, spec) // repo-relative
+		manifestRel := qpmPackageJSONRepoPath(moduleName, spec)
 		i.log.Verbosef("  sparse clone: repo=%s ref=%s paths=%v", spec.Repo, ref, []string{manifestRel})
 		if err := git.SparseClone(ctx, i.git, dstDir, git.SparseCloneOptions{
 			Repo:        spec.Repo,
@@ -108,7 +108,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		rootManifestRel := moduleName + ".Package.json"
 		rootManifestPath := filepath.Join(dstDir, rootManifestRel)
 
-		// Flatten manifest into module root (monorepo-friendly).
 		if filepath.ToSlash(manifestRel) != rootManifestRel {
 			if err := fs.CopyFile(rootManifestPath, localManifestPath); err != nil {
 				return err
@@ -127,7 +126,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			return err
 		}
 
-		// Step 4.2: Generate Package.swift without removing the Package.json.
 		pkgSwift, err := swiftpm.RenderPackageSwiftFromQPM(pm)
 		if err != nil {
 			return err
@@ -136,8 +134,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			return err
 		}
 
-		// Materialize sources/tests via sparse checkout, then flatten from spec.Path if needed.
-		targetRelPaths := qpmTargetPaths(pm) // local paths referenced by Package.swift
+		targetRelPaths := qpmTargetPaths(pm)
 		relocations := make([]relocation, 0, len(targetRelPaths))
 
 		repoPaths := []string{manifestRel}
@@ -186,8 +183,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 		manifestContent := string(b)
 
-		// If Package.swift is not in repo root, ensure we still end up with
-		// QPackages/<ModuleName>/Package.swift (per spec).
 		rootManifestPath := filepath.Join(dstDir, "Package.swift")
 		if filepath.ToSlash(manifestRel) != "Package.swift" {
 			if err := fs.WriteFile(rootManifestPath, []byte(manifestContent)); err != nil {
@@ -220,7 +215,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			}
 		}
 
-		// Rewrite deps to local paths (best-effort).
 		updated, err := swiftpm.RewriteDependenciesToLocalPaths(manifestContent, localNames)
 		if err != nil {
 			return err
@@ -231,7 +225,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			}
 		}
 
-		// Drop the original nested manifest copy if we had to copy it.
 		if rootManifestPath != localManifestPath {
 			_ = fs.RemoveAll(localManifestPath)
 			_ = cleanupEmptyParents(filepath.Dir(localManifestPath), dstDir)
@@ -241,7 +234,6 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		return fmt.Errorf("%s: unsupported type %q", moduleName, spec.Type)
 	}
 
-	// Keep checkout results only.
 	_ = fs.RemoveAll(filepath.Join(dstDir, ".git"))
 
 	return nil
@@ -278,7 +270,6 @@ func (i *Installer) installLocalQPM(moduleName string, spec model.DepSpec, dstDi
 		return err
 	}
 
-	// Symlink referenced target paths from the local package.
 	for _, p := range qpmTargetPaths(pm) {
 		src := filepath.Join(lp.RootDir, filepath.FromSlash(filepath.ToSlash(p)))
 		dst := filepath.Join(dstDir, filepath.FromSlash(filepath.ToSlash(p)))
