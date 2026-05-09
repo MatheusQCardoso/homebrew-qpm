@@ -36,10 +36,12 @@ func (r Runner) Run(ctx context.Context, dir string, args ...string) (string, er
 		if errorMessage == "" {
 			errorMessage = strings.TrimSpace(stdoutBuffer.String())
 		}
-		if errorMessage != "" {
-			return stdoutBuffer.String(), fmt.Errorf("git %s: %s", strings.Join(args, " "), errorMessage)
+		command := strings.Join(args, " ")
+		baseErr := fmt.Errorf("git %s: %s", command, errorMessage)
+		if hints := gitCommandHints(args, errorMessage); hints != "" {
+			return stdoutBuffer.String(), fmt.Errorf("%w\n\n%s", baseErr, hints)
 		}
-		return stdoutBuffer.String(), fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+		return stdoutBuffer.String(), baseErr
 	}
 
 	return stdoutBuffer.String(), nil
@@ -66,6 +68,50 @@ func redactArg(arg string) string {
 	}
 	parsedURL.User = url.UserPassword(parsedURL.User.Username(), "***")
 	return parsedURL.String()
+}
+
+func gitCommandHints(args []string, stderr string) string {
+	if len(args) == 0 {
+		return ""
+	}
+
+	switch args[0] {
+	case "clone":
+		return cloneHints(args, stderr)
+	default:
+		return ""
+	}
+}
+
+func cloneHints(args []string, stderr string) string {
+	repo := cloneRepoArg(args)
+	if repo == "" {
+		repo = "<repository>"
+	}
+
+	lower := strings.ToLower(stderr)
+	if strings.Contains(lower, "permission denied") || strings.Contains(lower, "authentication failed") || strings.Contains(lower, "could not read from remote repository") {
+		return fmt.Sprintf("❌ Failed to clone %s\n  • Check your SSH keys: ssh-add -K ~/.ssh/id_rsa\n  • Or use HTTPS: modify Quirino.json to use https:// URL\n  • Confirm your Git credentials and host access.", repo)
+	}
+	if strings.Contains(lower, "repository not found") || strings.Contains(lower, "remote repository not found") {
+		return fmt.Sprintf("❌ Failed to clone %s\n  • Verify the repository URL and access rights\n  • Ensure the repository exists and your account has read permission.", repo)
+	}
+	if strings.Contains(lower, "could not resolve host") || strings.Contains(lower, "unable to access") {
+		return fmt.Sprintf("❌ Failed to clone %s\n  • Check network connectivity and DNS resolution\n  • If you are behind a proxy, verify Git proxy settings.", repo)
+	}
+	if strings.Contains(lower, "connection timed out") || strings.Contains(lower, "timed out") {
+		return fmt.Sprintf("❌ Failed to clone %s\n  • The remote host did not respond in time\n  • Check your network connection or try again later.", repo)
+	}
+	return fmt.Sprintf("❌ Failed to clone %s\n  • Verify your Git URL and network connectivity\n  • Check repository access or try HTTPS if SSH is blocked.", repo)
+}
+
+func cloneRepoArg(args []string) string {
+	for i := 1; i < len(args)-1; i++ {
+		if !strings.HasPrefix(args[i], "-") {
+			return args[i]
+		}
+	}
+	return ""
 }
 
 type SparseCloneOptions struct {
