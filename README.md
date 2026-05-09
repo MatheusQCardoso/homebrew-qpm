@@ -131,16 +131,16 @@ All keys below are supported. `Quirino.json` is decoded as JSON (and must not co
   - For **remote** deps: repo-relative subdirectory prefix (monorepo support).
     - QPM: where to find `<ModuleName>.Package.json`
     - SPM: where to find `Package.swift`
-  - For **local** deps (when `repo` is omitted): absolute path (or `~`-prefixed) where QPM will search for the manifest.
+  - For **local** deps (when `repo` is omitted): absolute/relative path where QPM will search for the manifest.
 - **`branch`** *(optional)*: git ref to checkout
 - **`tag`** *(optional)*: git ref to checkout (also used for SwiftPM’s `.exact(...)` and `.from(...)` parsing)
 - **`revision`** *(optional)*: git SHA to checkout
 
-#### Ref rule (important)
+#### Ref Rule
 
 At most **one** of `branch`, `tag`, or `revision` may be set.
 
-#### Local vs remote rule (important)
+#### Local vs Remote
 
 - **Remote dependency**: `repo` is set.
 - **Local dependency**: `repo` is omitted and `path` is required.
@@ -247,7 +247,7 @@ QPM packages are described by a JSON manifest named **exactly** `<ModuleName>.Pa
 - **`name`** *(required)*: string (SwiftPM `Package(name: ...)`)
 - **`min-ios-version`** *(optional)*: string (e.g. `"15"` or `"15.0"`)
   - Only the **major** version is used; invalid/missing values default to **15**.
-- **`products`** *(optional but typically present)*: array of products
+- **`products`** *(optional)*: array of products coming from package
   - Supported product types: **only** `"library"`.
 - **`dependencies`** *(optional)*: object map of dependencies by name
   - Values are the same DepSpec object as in `Quirino.json`.
@@ -256,13 +256,13 @@ QPM packages are described by a JSON manifest named **exactly** `<ModuleName>.Pa
 
 ### Product keys (`package.products[]`)
 
-- **`type`** *(required)*: must be `"library"`
+- **`type`** *(required)*: only `"library"` currently supported
 - **`name`** *(required)*: string
-- **`targets`** *(required)*: array of strings (target names)
+- **`targets`** *(required)*: array of strings (targets to be included in this product)
 
 ### Target keys (`package.targets.<TargetName>`)
 
-- **`path`** *(required)*: string (relative path that will be checked out/materialized)
+- **`path`** *(required)*: string (path pointing to the target's sources)
 - **`dependencies`** *(optional)*: array of strings
   - If the string matches a **local target name**, it is rendered as `.target(name: "...")`.
   - Otherwise it is rendered as `.product(name: "<Dep>", package: "<Dep>")`.
@@ -314,7 +314,7 @@ For each QPM module:
 - if the module was configured with a monorepo `path` prefix, QPM will **relocate** checked-out directories so that the final on-disk layout matches the `path` values referenced by the generated `Package.swift`
 - remove `QPackages/<Name>/.git` (only checkout results remain)
 
-For **local** QPM modules (no `repo`, absolute `path`):
+For **local** QPM modules (no `repo`, only `path` provided):
 
 - locate `<Name>.Package.json` under the provided `path`
 - copy it into `QPackages/<Name>/<Name>.Package.json`
@@ -334,7 +334,7 @@ For each SwiftPM module:
   - `.package(path: "../<DepName>")`
 - remove `QPackages/<Name>/.git`
 
-For **local** SwiftPM modules (no `repo`, absolute `path`):
+For **local** SwiftPM modules (no `repo`, only `path` provided):
 
 - locate `Package.swift` under the provided `path`
 - write `QPackages/<Name>/Package.swift` (after best-effort dependency rewriting)
