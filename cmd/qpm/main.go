@@ -11,6 +11,12 @@ import (
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/qpm"
 )
 
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildTime = "unknown"
+)
+
 func main() {
 	ctx := context.Background()
 	os.Exit(run(ctx, os.Args[1:]))
@@ -29,6 +35,8 @@ func run(ctx context.Context, args []string) int {
 		return runGraph(ctx, args[1:])
 	case "clean":
 		return runClean(ctx, args[1:])
+	case "version", "--version":
+		return runVersion(os.Stdout)
 	case "-h", "--help", "help":
 		usage(os.Stdout)
 		return 0
@@ -50,6 +58,7 @@ COMMANDS
   install   Resolve deps and materialize QPackages/
   graph     Print the resolved dependency graph (JSON)
   clean     Delete QPackages/ and qpm-generated leftovers
+  version   Print qpm version and build metadata
   help      Show this help
 
 OPTIONS
@@ -64,6 +73,7 @@ EXAMPLES
   qpm install
   qpm install --file ./Quirino.json --packages-dir QPackages --verbose
   qpm graph
+  qpm version
   qpm clean
 `)
 }
@@ -152,5 +162,10 @@ func runClean(ctx context.Context, args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	return 0
+}
+
+func runVersion(w io.Writer) int {
+	fmt.Fprintf(w, "qpm %s\ncommit: %s\nbuilt: %s\n", version, commit, buildTime)
 	return 0
 }
