@@ -2,11 +2,13 @@ package qpm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
@@ -14,23 +16,25 @@ import (
 )
 
 type GitFetcher struct {
-	cacheDir string
-	basePath string
-	git      git.Runner
-	log      Logger
+	cacheDir       string
+	basePath       string
+	git            git.Runner
+	log            Logger
+	networkTimeout time.Duration
 }
 
-func NewGitFetcher(packagesDir string, basePath string, log Logger) *GitFetcher {
+func NewGitFetcher(packagesDir string, basePath string, log Logger, networkTimeout time.Duration) *GitFetcher {
 	cacheDirectory := filepath.Join(packagesDir, ".qpm-cache")
 	_ = fs.EnsureDir(cacheDirectory)
 	if log == nil {
 		log = NopLogger{}
 	}
 	return &GitFetcher{
-		cacheDir: cacheDirectory,
-		basePath: basePath,
-		git:      git.Runner{Verbose: log.VerboseEnabled()},
-		log:      log,
+		cacheDir:       cacheDirectory,
+		basePath:       basePath,
+		git:            git.Runner{Verbose: log.VerboseEnabled()},
+		log:            log,
+		networkTimeout: networkTimeout,
 	}
 }
 
@@ -108,11 +112,20 @@ func (f *GitFetcher) fetchFile(ctx context.Context, spec model.DepSpec, repoRelP
 
 	ref := pickRef(spec)
 	f.log.Verbosef("  sparse fetch: %s (ref=%s) paths=%v", spec.Repo, ref, []string{repoRelPath})
-	if err := git.SparseClone(ctx, f.git, cloneDirectory, git.SparseCloneOptions{
+	fetchCtx := ctx
+	var cancel context.CancelFunc
+	if f.networkTimeout > 0 {
+		fetchCtx, cancel = context.WithTimeout(ctx, f.networkTimeout)
+		defer cancel()
+	}
+	if err := git.SparseClone(fetchCtx, f.git, cloneDirectory, git.SparseCloneOptions{
 		Repo:        spec.Repo,
 		Ref:         ref,
 		SparsePaths: []string{repoRelPath},
 	}); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("fetch %s: timed out after %s: %w", spec.Repo, f.networkTimeout, err)
+		}
 		return nil, err
 	}
 

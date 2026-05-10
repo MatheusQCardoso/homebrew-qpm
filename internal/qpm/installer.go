@@ -2,12 +2,14 @@ package qpm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
@@ -17,19 +19,21 @@ import (
 )
 
 type Installer struct {
-	packagesDir string
-	git         git.Runner
-	log         Logger
+	packagesDir    string
+	git            git.Runner
+	log            Logger
+	networkTimeout time.Duration
 }
 
-func NewInstaller(packagesDir string, log Logger) *Installer {
+func NewInstaller(packagesDir string, log Logger, networkTimeout time.Duration) *Installer {
 	if log == nil {
 		log = NopLogger{}
 	}
 	return &Installer{
-		packagesDir: packagesDir,
-		git:         git.Runner{Verbose: log.VerboseEnabled()},
-		log:         log,
+		packagesDir:    packagesDir,
+		git:            git.Runner{Verbose: log.VerboseEnabled()},
+		log:            log,
+		networkTimeout: networkTimeout,
 	}
 }
 
@@ -79,6 +83,12 @@ func (i *Installer) InstallAll(ctx context.Context, g *graph.Graph) error {
 }
 
 func (i *Installer) installOne(ctx context.Context, moduleName string, spec model.DepSpec, localNames map[string]bool) error {
+	installCtx := ctx
+	var cancel context.CancelFunc
+	if i.networkTimeout > 0 {
+		installCtx, cancel = context.WithTimeout(ctx, i.networkTimeout)
+		defer cancel()
+	}
 	dstDir := filepath.Join(i.packagesDir, moduleName)
 	if fs.FileExists(dstDir) {
 		if err := fs.RemoveAll(dstDir); err != nil {
@@ -96,11 +106,14 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 		manifestRel := qpmPackageJSONRepoPath(moduleName, spec)
 		i.log.Verbosef("  sparse clone: repo=%s ref=%s paths=%v", spec.Repo, ref, []string{manifestRel})
-		if err := git.SparseClone(ctx, i.git, dstDir, git.SparseCloneOptions{
+		if err := git.SparseClone(installCtx, i.git, dstDir, git.SparseCloneOptions{
 			Repo:        spec.Repo,
 			Ref:         ref,
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+			}
 			return fmt.Errorf("clone %s: %w", moduleName, err)
 		}
 
@@ -147,7 +160,10 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 
 		i.log.Verbosef("  sparse paths: %v", uniquePosix(repoPaths))
-		if err := git.EnsureSparsePaths(ctx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
+		if err := git.EnsureSparsePaths(installCtx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+			}
 			return err
 		}
 		for _, r := range relocations {
@@ -168,11 +184,14 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 		manifestRel := spmPackageSwiftRepoPath(spec)
 		i.log.Verbosef("  sparse clone: repo=%s ref=%s paths=%v", spec.Repo, ref, []string{manifestRel})
-		if err := git.SparseClone(ctx, i.git, dstDir, git.SparseCloneOptions{
+		if err := git.SparseClone(installCtx, i.git, dstDir, git.SparseCloneOptions{
 			Repo:        spec.Repo,
 			Ref:         ref,
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+			}
 			return fmt.Errorf("clone %s: %w", moduleName, err)
 		}
 
@@ -205,7 +224,10 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 
 		i.log.Verbosef("  sparse paths: %v", uniquePosix(repoPaths))
-		if err := git.EnsureSparsePaths(ctx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
+		if err := git.EnsureSparsePaths(installCtx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+			}
 			return err
 		}
 		for _, r := range relocations {

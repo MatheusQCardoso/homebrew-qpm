@@ -32,6 +32,10 @@ func (r Runner) Run(ctx context.Context, dir string, args ...string) (string, er
 	cmd.Stderr = &stderrBuffer
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			command := strings.Join(args, " ")
+			return stdoutBuffer.String(), fmt.Errorf("git %s: %w", command, ctx.Err())
+		}
 		errorMessage := strings.TrimSpace(stderrBuffer.String())
 		if errorMessage == "" {
 			errorMessage = strings.TrimSpace(stdoutBuffer.String())

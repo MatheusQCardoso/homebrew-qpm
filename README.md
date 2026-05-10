@@ -97,17 +97,22 @@ qpm <command> [options]
 
 --- 
 
-## `Quirino.json` (project manifest) reference
+## Dependency Manifest (`Quirino.json`) reference
 
-`Quirino.json` lives in your project root (or you point `--file` to it). It declares top-level dependencies and is also used to compute where `<packages-dir>/` is created.
+`Quirino.json` lives in your project root (or you point to it using `--file`). It declares top-level dependencies as well as additional information required during package resolution and installation.
 
-You can set the output directory name with the optional `packagesDir` key in `Quirino.json`.
+- `packagesDir` (optional): determines where the packages will be installed.
+Default: `'./QPackages'`
+- `networkTimeoutSeconds` (optional): number of seconds before any network operation times out. Setting to `0` **disables** the network timeout entirely.
+Default: `30`
+- `dependencies` (required): Mapping of dependencies to be downloaded.
 
 ### Shape
 
 ```json
 {
   "packagesDir": "MyPackages", // (optional)
+  "networkTimeoutSeconds": 30, // (optional, default: 30 seconds)
   "dependencies": { // (required)
     "<ModuleName>": { /* DepSpec */ }
   }
@@ -119,7 +124,7 @@ You can set the output directory name with the optional `packagesDir` key in `Qu
 - It becomes the folder name `QPackages/<ModuleName>/`.
 - For QPM modules, it also determines the required manifest filename `<ModuleName>.Package.json`.
 
-### DepSpec keys (per module)
+### DepSpec keys per Module
 
 All keys below are supported. `Quirino.json` is decoded as JSON (and must not contain trailing extra JSON content).
 

@@ -56,7 +56,8 @@ func BuildGraphJSON(ctx context.Context, opt BuildGraphOptions) ([]byte, error) 
 	}
 
 	basePath := filepath.Dir(opt.QuirinoJSONPath)
-	fetcher := NewGitFetcher(packagesDir, basePath, NopLogger{})
+	networkTimeout := m.NetworkTimeout()
+	fetcher := NewGitFetcher(packagesDir, basePath, NopLogger{}, networkTimeout)
 	g, err := graph.Build(ctx, m, fetcher)
 	if err != nil {
 		return nil, err
@@ -94,7 +95,8 @@ func Install(ctx context.Context, opt InstallOptions) error {
 
 	log.Infof("building dependency graph...")
 	basePath := filepath.Dir(opt.QuirinoJSONPath)
-	fetcher := NewGitFetcher(packagesDir, basePath, log)
+	networkTimeout := m.NetworkTimeout()
+	fetcher := NewGitFetcher(packagesDir, basePath, log, networkTimeout)
 	g, err := graph.Build(ctx, m, fetcher)
 	if err != nil {
 		return err
@@ -113,7 +115,7 @@ func Install(ctx context.Context, opt InstallOptions) error {
 
 	start := time.Now()
 	log.Infof("installing...")
-	installer := NewInstaller(packagesDir, log)
+	installer := NewInstaller(packagesDir, log, networkTimeout)
 	if err := installer.InstallAll(ctx, g); err != nil {
 		return err
 	}

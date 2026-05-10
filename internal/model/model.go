@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type DependencyType string
@@ -113,8 +115,50 @@ func (s DepSpec) Validate() error {
 }
 
 type QuirinoManifest struct {
-	PackagesDir  string             `json:"packagesDir,omitempty"`
-	Dependencies map[string]DepSpec `json:"dependencies"`
+	PackagesDir           string             `json:"packagesDir,omitempty"`
+	NetworkTimeoutSeconds SecondsDuration    `json:"networkTimeoutSeconds,omitempty"`
+	Dependencies          map[string]DepSpec `json:"dependencies"`
+}
+
+func (m QuirinoManifest) NetworkTimeout() time.Duration {
+	if m.NetworkTimeoutSeconds.Valid {
+		return m.NetworkTimeoutSeconds.Duration
+	}
+	return 30 * time.Second
+}
+
+type SecondsDuration struct {
+	Duration time.Duration
+	Valid    bool
+}
+
+func (d *SecondsDuration) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	var numeric float64
+	if err := json.Unmarshal(data, &numeric); err == nil {
+		d.Duration = time.Duration(numeric * float64(time.Second))
+		d.Valid = true
+		return nil
+	}
+
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	if str == "" {
+		return nil
+	}
+
+	numeric, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return fmt.Errorf("invalid networkTimeoutSeconds: %w", err)
+	}
+	d.Duration = time.Duration(numeric * float64(time.Second))
+	d.Valid = true
+	return nil
 }
 
 type QpmPackageManifest struct {
