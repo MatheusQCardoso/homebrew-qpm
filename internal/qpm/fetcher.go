@@ -124,7 +124,7 @@ func (f *GitFetcher) fetchFile(ctx context.Context, spec model.DepSpec, repoRelP
 		SparsePaths: []string{repoRelPath},
 	}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("fetch %s: timed out after %s: %w", spec.Repo, f.networkTimeout, err)
+			return nil, WrapErrorf(err, "fetch %s: timed out after %s", spec.Repo, f.networkTimeout)
 		}
 		return nil, err
 	}

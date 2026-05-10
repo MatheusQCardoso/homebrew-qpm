@@ -29,7 +29,7 @@ func resolveRelativePath(relativePath string, baseDir string) (string, error) {
 	resolved = filepath.Clean(resolved)
 
 	if _, err := os.Stat(resolved); err != nil {
-		return "", fmt.Errorf("relative path %q resolves to %q which doesn't exist: %w", relativePath, resolved, err)
+		return "", WrapErrorf(err, "relative path %q resolves to %q which doesn't exist", relativePath, resolved)
 	}
 
 	return resolved, nil

@@ -69,7 +69,7 @@ func (i *Installer) InstallAll(ctx context.Context, g *graph.Graph) error {
 	for _, it := range items {
 		spec := g.Nodes[it.name].Normalized()
 		if err := spec.Validate(); err != nil {
-			return fmt.Errorf("%s: %w", it.name, err)
+			return WrapErrorf(err, "%s", it.name)
 		}
 		i.log.Infof("install %s", it.name)
 		i.log.Verbosef("  spec: type=%s repo=%s path=%s ref=%s", spec.Type, spec.Repo, spec.Path, pickRef(spec))
@@ -112,9 +112,9 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+				return WrapErrorf(err, "clone %s: timed out after %s", moduleName, i.networkTimeout)
 			}
-			return fmt.Errorf("clone %s: %w", moduleName, err)
+			return WrapErrorf(err, "clone %s", moduleName)
 		}
 
 		localManifestPath := filepath.Join(dstDir, filepath.FromSlash(manifestRel))
@@ -162,7 +162,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		i.log.Verbosef("  sparse paths: %v", uniquePosix(repoPaths))
 		if err := git.EnsureSparsePaths(installCtx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+				return WrapErrorf(err, "clone %s: timed out after %s", moduleName, i.networkTimeout)
 			}
 			return err
 		}
@@ -190,9 +190,9 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 			SparsePaths: []string{manifestRel},
 		}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+				return WrapErrorf(err, "clone %s: timed out after %s", moduleName, i.networkTimeout)
 			}
-			return fmt.Errorf("clone %s: %w", moduleName, err)
+			return WrapErrorf(err, "clone %s", moduleName)
 		}
 
 		localManifestPath := filepath.Join(dstDir, filepath.FromSlash(manifestRel))
@@ -226,7 +226,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		i.log.Verbosef("  sparse paths: %v", uniquePosix(repoPaths))
 		if err := git.EnsureSparsePaths(installCtx, i.git, dstDir, ref, uniquePosix(repoPaths)); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("clone %s: timed out after %s: %w", moduleName, i.networkTimeout, err)
+				return WrapErrorf(err, "clone %s: timed out after %s", moduleName, i.networkTimeout)
 			}
 			return err
 		}
