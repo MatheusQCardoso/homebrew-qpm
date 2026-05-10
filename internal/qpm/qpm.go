@@ -129,7 +129,7 @@ func printInstallSummary(log Logger, g *graph.Graph, duration time.Duration, pac
 	total, qpmCount, spmCount := installSummaryCounts(g)
 	size, err := directorySize(packagesDir)
 	if err != nil {
-		log.Verbosef("unable to compute packages directory size: %v", err)
+		log.VerboseError(err, "unable to compute packages directory size")
 	}
 	log.Infof("\nInstalled %d packages", total)
 	log.Infof("  • QPM: %d", qpmCount)

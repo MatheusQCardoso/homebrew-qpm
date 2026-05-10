@@ -11,6 +11,7 @@ type Logger interface {
 	Infof(format string, args ...any)
 	Verbosef(format string, args ...any)
 	VerboseEnabled() bool
+	VerboseError(err error, format string, args ...any)
 }
 
 type StdLogger struct {
@@ -46,8 +47,17 @@ func (l *StdLogger) Verbosef(format string, args ...any) {
 	fmt.Fprintf(l.out, format+"\n", args...)
 }
 
+func (l *StdLogger) VerboseError(err error, format string, args ...any) {
+	if !l.VerboseEnabled() {
+		return
+	}
+	args = append(args, err)
+	l.Verbosef("error: "+format+": %v", args...)
+}
+
 type NopLogger struct{}
 
 func (NopLogger) Infof(string, ...any)    {}
 func (NopLogger) Verbosef(string, ...any) {}
 func (NopLogger) VerboseEnabled() bool    { return false }
+func (NopLogger) VerboseError(error, string, ...any)     {}
