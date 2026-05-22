@@ -77,11 +77,12 @@ qpm <command> [options]
 - **`qpm install`**: Resolve deps and materialize `QPackages/`
 - **`qpm graph`**: Print the resolved dependency graph (JSON)
 - **`qpm clean`**: Delete `QPackages/` and qpm-generated leftovers
+- **`qpm version`**: Displays the build version
 - **`qpm help` / `qpm --help` / `qpm -h`**: Show help
 
 ### Options
 
-#### Common (all commands)
+#### `install`, `graph`, `clean`
 
 - **`--file <path>`**: Path to `Quirino.json` (default: `./Quirino.json`)
 
@@ -111,7 +112,7 @@ Default: `30`
 
 ```json
 {
-  "packagesDir": "MyPackages", // (optional)
+  "packagesDir": "MyPackages", // (optional, default: QPackages)
   "networkTimeoutSeconds": 30, // (optional, default: 30 seconds)
   "dependencies": { // (required)
     "<ModuleName>": { /* DepSpec */ }
