@@ -62,7 +62,7 @@ func (i *Installer) InstallAll(ctx context.Context, g *graph.Graph) error {
 		return items[a].name < items[b].name
 	})
 
-	localNames := map[string]bool{}
+	localNames := make(map[string]bool, len(g.Nodes))
 	for name := range g.Nodes {
 		localNames[name] = true
 	}
@@ -151,7 +151,8 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		targetRelPaths := qpmTargetPaths(pm)
 		relocations := make([]relocation, 0, len(targetRelPaths))
 
-		repoPaths := []string{manifestRel}
+		repoPaths := make([]string, 0, 1+len(targetRelPaths))
+		repoPaths = append(repoPaths, manifestRel)
 		for _, p := range targetRelPaths {
 			srcRepoRel := repoRel(spec.Path, p)
 			repoPaths = append(repoPaths, srcRepoRel)
@@ -214,7 +215,8 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 
 		targetPaths := swiftpm.ParseSPMTargetPaths(manifestContent)
 
-		repoPaths := []string{manifestRel}
+		repoPaths := make([]string, 0, 1+len(targetPaths))
+		repoPaths = append(repoPaths, manifestRel)
 		relocations := make([]relocation, 0, len(targetPaths))
 		for _, p := range targetPaths {
 			srcRepoRel := repoRel(spec.Path, p)
