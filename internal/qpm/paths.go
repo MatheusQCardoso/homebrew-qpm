@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 )
 
 func resolvePackagesDir(quirinoJSONPath string, packagesDirName string) (string, error) {
 	if packagesDirName == "" {
-		packagesDirName = "QPackages"
+		packagesDirName = config.DefaultPackagesDirName
 	}
 
 	if filepath.IsAbs(packagesDirName) {

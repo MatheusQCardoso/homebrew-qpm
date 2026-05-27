@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 )
 
 type LocalPackage struct {
@@ -46,7 +48,7 @@ func ResolveLocalQpmManifest(moduleName string, basePath string) (LocalPackage, 
 			return LocalPackage{}, err
 		}
 	}
-	filename := moduleName + ".Package.json"
+	filename := moduleName + config.QPMManifestFileExtension
 	p, err := findFile(basePath, filename)
 	if err != nil {
 		return LocalPackage{}, err
@@ -72,7 +74,7 @@ func ResolveLocalSpmManifest(basePath string) (LocalPackage, error) {
 			return LocalPackage{}, err
 		}
 	}
-	p, err := findFile(basePath, "Package.swift")
+	p, err := findFile(basePath, config.SPMManifestFileName)
 	if err != nil {
 		return LocalPackage{}, err
 	}
@@ -130,9 +132,10 @@ func findFile(basePath string, filename string) (string, error) {
 			return err
 		}
 		if d.IsDir() {
-			switch d.Name() {
-			case ".git", ".build", "DerivedData", "node_modules":
-				return filepath.SkipDir
+			for _, skipDir := range config.SkipDirs {
+				if d.Name() == skipDir {
+					return filepath.SkipDir
+				}
 			}
 			return nil
 		}

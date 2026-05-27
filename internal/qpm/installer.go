@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/graph"
@@ -118,7 +119,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 
 		localManifestPath := filepath.Join(dstDir, filepath.FromSlash(manifestRel))
-		rootManifestRel := moduleName + ".Package.json"
+		rootManifestRel := moduleName + config.QPMManifestFileExtension
 		rootManifestPath := filepath.Join(dstDir, rootManifestRel)
 
 		if filepath.ToSlash(manifestRel) != rootManifestRel {
@@ -134,7 +135,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		if err != nil {
 			return err
 		}
-		pm, err := model.DecodeStrict[model.QpmPackageManifest](b, moduleName+".Package.json")
+		pm, err := model.DecodeStrict[model.QpmPackageManifest](b, moduleName+config.QPMManifestFileExtension)
 		if err != nil {
 			return err
 		}
@@ -143,7 +144,7 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		if err != nil {
 			return err
 		}
-		if err := fs.WriteFile(filepath.Join(dstDir, "Package.swift"), pkgSwift); err != nil {
+		if err := fs.WriteFile(filepath.Join(dstDir, config.SPMManifestFileName), pkgSwift); err != nil {
 			return err
 		}
 
@@ -202,8 +203,8 @@ func (i *Installer) installOne(ctx context.Context, moduleName string, spec mode
 		}
 		manifestContent := string(b)
 
-		rootManifestPath := filepath.Join(dstDir, "Package.swift")
-		if filepath.ToSlash(manifestRel) != "Package.swift" {
+		rootManifestPath := filepath.Join(dstDir, config.SPMManifestFileName)
+		if filepath.ToSlash(manifestRel) != config.SPMManifestFileName {
 			if err := fs.WriteFile(rootManifestPath, []byte(manifestContent)); err != nil {
 				return err
 			}
@@ -271,7 +272,7 @@ func (i *Installer) installLocalQPM(moduleName string, spec model.DepSpec, dstDi
 		return err
 	}
 
-	manifestDst := filepath.Join(dstDir, moduleName+".Package.json")
+	manifestDst := filepath.Join(dstDir, moduleName+config.QPMManifestFileExtension)
 	if err := fs.CopyFile(manifestDst, lp.ManifestPath); err != nil {
 		return err
 	}
@@ -279,7 +280,7 @@ func (i *Installer) installLocalQPM(moduleName string, spec model.DepSpec, dstDi
 	if err != nil {
 		return err
 	}
-	pm, err := model.DecodeStrict[model.QpmPackageManifest](b, moduleName+".Package.json")
+	pm, err := model.DecodeStrict[model.QpmPackageManifest](b, moduleName+config.QPMManifestFileExtension)
 	if err != nil {
 		return err
 	}
@@ -288,7 +289,7 @@ func (i *Installer) installLocalQPM(moduleName string, spec model.DepSpec, dstDi
 	if err != nil {
 		return err
 	}
-	if err := fs.WriteFile(filepath.Join(dstDir, "Package.swift"), pkgSwift); err != nil {
+	if err := fs.WriteFile(filepath.Join(dstDir, config.SPMManifestFileName), pkgSwift); err != nil {
 		return err
 	}
 
@@ -335,7 +336,7 @@ func (i *Installer) installLocalSPM(moduleName string, spec model.DepSpec, dstDi
 	if err != nil {
 		return err
 	}
-	manifestDst := filepath.Join(dstDir, "Package.swift")
+	manifestDst := filepath.Join(dstDir, config.SPMManifestFileName)
 	if err := fs.WriteFile(manifestDst, []byte(updated)); err != nil {
 		return err
 	}

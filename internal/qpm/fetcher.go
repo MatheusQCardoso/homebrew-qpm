@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/fs"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/git"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
@@ -24,7 +25,7 @@ type GitFetcher struct {
 }
 
 func NewGitFetcher(packagesDir string, basePath string, log Logger, networkTimeout time.Duration) *GitFetcher {
-	cacheDirectory := filepath.Join(packagesDir, ".qpm-cache")
+	cacheDirectory := filepath.Join(packagesDir, config.QPMCacheDirName)
 	_ = fs.EnsureDir(cacheDirectory)
 	if log == nil {
 		log = NopLogger{}
@@ -102,13 +103,13 @@ func (f *GitFetcher) fetchFile(ctx context.Context, spec model.DepSpec, repoRelP
 		return nil, err
 	}
 
-	temporaryRoot, err := os.MkdirTemp(f.cacheDir, "fetch-*")
+	temporaryRoot, err := os.MkdirTemp(f.cacheDir, config.FetchTempDirPrefix+"*")
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = os.RemoveAll(temporaryRoot) }()
 
-	cloneDirectory := filepath.Join(temporaryRoot, "repo")
+	cloneDirectory := filepath.Join(temporaryRoot, config.ClonedRepoDirName)
 
 	ref := pickRef(spec)
 	f.log.Verbosef("  sparse fetch: %s (ref=%s) paths=%v", spec.Repo, ref, []string{repoRelPath})
@@ -136,16 +137,16 @@ func (f *GitFetcher) fetchFile(ctx context.Context, spec model.DepSpec, repoRelP
 
 func qpmPackageJSONRepoPath(moduleName string, spec model.DepSpec) string {
 	if spec.Path != "" {
-		return path.Join(spec.Path, moduleName+".Package.json")
+		return path.Join(spec.Path, moduleName+config.QPMManifestFileExtension)
 	}
-	return moduleName + ".Package.json"
+	return moduleName + config.QPMManifestFileExtension
 }
 
 func spmPackageSwiftRepoPath(spec model.DepSpec) string {
 	if spec.Path != "" {
-		return path.Join(spec.Path, "Package.swift")
+		return path.Join(spec.Path, config.SPMManifestFileName)
 	}
-	return "Package.swift"
+	return config.SPMManifestFileName
 }
 
 func pickRef(spec model.DepSpec) string {

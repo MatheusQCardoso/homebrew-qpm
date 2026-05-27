@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/model"
 	"github.com/MatheusQCardoso/homebrew-qpm/internal/swiftpm"
 )
@@ -81,7 +82,7 @@ func Build(ctx context.Context, m model.QuirinoManifest, fetcher ManifestFetcher
 				}
 				return nil, fmt.Errorf("fetch %s (%s): %w", name, id, err)
 			}
-			pm, err := model.DecodeStrict[model.QpmPackageManifest](b, name+".Package.json")
+			pm, err := model.DecodeStrict[model.QpmPackageManifest](b, name+config.QPMManifestFileExtension)
 			if err != nil {
 				return nil, err
 			}

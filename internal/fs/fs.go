@@ -5,10 +5,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 )
 
 func EnsureDir(path string) error {
-	return os.MkdirAll(path, 0o755)
+	return os.MkdirAll(path, config.DirPermissions)
 }
 
 func RemoveAll(path string) error {
@@ -31,7 +33,7 @@ func WriteFile(path string, data []byte) error {
 	if err := EnsureDir(filepath.Dir(path)); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, config.FilePermissions)
 }
 
 func CopyFile(dst, src string) error {

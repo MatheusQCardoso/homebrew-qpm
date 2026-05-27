@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/MatheusQCardoso/homebrew-qpm/internal/config"
 )
 
 type DependencyType string
@@ -124,7 +126,7 @@ func (m QuirinoManifest) NetworkTimeout() time.Duration {
 	if m.NetworkTimeoutSeconds.Valid {
 		return m.NetworkTimeoutSeconds.Duration
 	}
-	return 30 * time.Second
+	return config.DefaultNetworkTimeout
 }
 
 type SecondsDuration struct {
