@@ -31,16 +31,15 @@ func (r Runner) Run(ctx context.Context, dir string, args ...string) (string, er
 	cmd.Stdout = &stdoutBuffer
 	cmd.Stderr = &stderrBuffer
 
+	command := strings.Join(args, " ")
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() != nil {
-			command := strings.Join(args, " ")
 			return stdoutBuffer.String(), fmt.Errorf("git %s: %w", command, ctx.Err())
 		}
 		errorMessage := strings.TrimSpace(stderrBuffer.String())
 		if errorMessage == "" {
 			errorMessage = strings.TrimSpace(stdoutBuffer.String())
 		}
-		command := strings.Join(args, " ")
 		baseErr := fmt.Errorf("git %s: %s", command, errorMessage)
 		if hints := gitCommandHints(args, errorMessage); hints != "" {
 			return stdoutBuffer.String(), fmt.Errorf("%w\n\n%s", baseErr, hints)
