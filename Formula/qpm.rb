@@ -1,4 +1,9 @@
-version = File.read(File.expand_path("../VERSION", __dir__)).strip
+version_file = File.expand_path("../VERSION", __dir__)
+version = if File.exist?(version_file)
+  File.read(version_file).strip
+else
+  raise "VERSION file not found at #{version_file}"
+end
 
 class Qpm < Formula
   desc "Quirino's Package Manager"
