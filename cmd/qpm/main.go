@@ -51,7 +51,7 @@ func usage(w io.Writer) {
 	fmt.Fprint(w, `NAME
   qpm - Quirino's Package Manager
 
-SYNOPSIS
+USAGE
   qpm <command> [options]
 
 COMMANDS
