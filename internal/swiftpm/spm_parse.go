@@ -17,6 +17,7 @@ type SwiftDependency struct {
 
 func ParseSPMDependencies(src string) ([]SwiftDependency, error) {
 	var deps []SwiftDependency
+	stringEnv := collectSwiftStringConstants(src)
 
 	packageBlocks := extractCallBlocks(src, ".package(")
 	for _, block := range packageBlocks {
@@ -24,12 +25,12 @@ func ParseSPMDependencies(src string) ([]SwiftDependency, error) {
 			continue
 		}
 
-		url := firstStringArg(block, "url:")
+		url := expandSwiftInterpolations(firstStringArg(block, "url:"), stringEnv)
 		if url == "" {
 			continue
 		}
 
-		name := firstStringArg(block, "name:")
+		name := expandSwiftInterpolations(firstStringArg(block, "name:"), stringEnv)
 		if name == "" {
 			name = guessNameFromURL(url)
 		}
@@ -44,19 +45,19 @@ func ParseSPMDependencies(src string) ([]SwiftDependency, error) {
 
 		switch {
 		case strings.Contains(block, "exact:"):
-			spec.Tag = firstStringArg(block, "exact:")
+			spec.Tag = expandSwiftInterpolations(firstStringArg(block, "exact:"), stringEnv)
 		case strings.Contains(block, ".exact("):
-			spec.Tag = firstCallStringArg(block, ".exact(")
+			spec.Tag = expandSwiftInterpolations(firstCallStringArg(block, ".exact("), stringEnv)
 		case strings.Contains(block, "branch:"):
-			spec.Branch = firstStringArg(block, "branch:")
+			spec.Branch = expandSwiftInterpolations(firstStringArg(block, "branch:"), stringEnv)
 		case strings.Contains(block, ".branch("):
-			spec.Branch = firstCallStringArg(block, ".branch(")
+			spec.Branch = expandSwiftInterpolations(firstCallStringArg(block, ".branch("), stringEnv)
 		case strings.Contains(block, "revision:"):
-			spec.Revision = firstStringArg(block, "revision:")
+			spec.Revision = expandSwiftInterpolations(firstStringArg(block, "revision:"), stringEnv)
 		case strings.Contains(block, ".revision("):
-			spec.Revision = firstCallStringArg(block, ".revision(")
+			spec.Revision = expandSwiftInterpolations(firstCallStringArg(block, ".revision("), stringEnv)
 		case strings.Contains(block, "from:"):
-			spec.Tag = firstStringArg(block, "from:")
+			spec.Tag = expandSwiftInterpolations(firstStringArg(block, "from:"), stringEnv)
 		}
 
 		spec = spec.Normalized()
@@ -102,6 +103,7 @@ func RewriteDependenciesToLocalPaths(src string, localNames map[string]bool) (st
 	if len(localNames) == 0 {
 		return src, nil
 	}
+	stringEnv := collectSwiftStringConstants(src)
 
 	packageSpans := extractCallBlocksWithSpans(src, ".package(")
 	if len(packageSpans) == 0 {
@@ -114,14 +116,14 @@ func RewriteDependenciesToLocalPaths(src string, localNames map[string]bool) (st
 		builder.WriteString(src[last:span.Start])
 
 		content := src[span.Start:span.End]
-		url := firstStringArg(content, "url:")
+		url := expandSwiftInterpolations(firstStringArg(content, "url:"), stringEnv)
 		if url == "" {
 			builder.WriteString(content)
 			last = span.End
 			continue
 		}
 
-		name := firstStringArg(content, "name:")
+		name := expandSwiftInterpolations(firstStringArg(content, "name:"), stringEnv)
 		if name == "" {
 			name = guessNameFromURL(url)
 		}
@@ -259,4 +261,66 @@ func detectIndentBefore(src string, idx int) string {
 	indent := src[lineStart:idx]
 	indent = strings.TrimRight(indent, "\r")
 	return indent
+}
+
+// reSwiftLetString matches top-level string bindings in Package.swift so that
+// dependency URLs using Swift interpolation (e.g. "\(internalGit)/my-repo")
+// can be resolved after extraction by firstStringArg.
+var reSwiftLetString = regexp.MustCompile(
+	`(?m)^[ \t]*(?:(?:private|fileprivate|internal|public|open)[ \t]+)?let[ \t]+(\w+)[ \t]*=[ \t]*"([^"]*)"[ \t;]*(?:[ \t]*//[^\n]*)?$`,
+)
+
+func collectSwiftStringConstants(src string) map[string]string {
+	out := make(map[string]string)
+	for _, m := range reSwiftLetString.FindAllStringSubmatch(src, -1) {
+		if len(m) == 3 {
+			out[m[1]] = m[2]
+		}
+	}
+	return out
+}
+
+func expandSwiftInterpolations(s string, env map[string]string) string {
+	if len(env) == 0 || !strings.Contains(s, `\(`) {
+		return s
+	}
+	const maxPasses = 64
+	for pass := 0; pass < maxPasses; pass++ {
+		changed := false
+		for start := 0; start < len(s)-2; start++ {
+			if s[start] != '\\' || s[start+1] != '(' {
+				continue
+			}
+			j := start + 2
+			if j >= len(s) || !isSwiftIdentByte(s[j], true) {
+				continue
+			}
+			j++
+			for j < len(s) && isSwiftIdentByte(s[j], false) {
+				j++
+			}
+			if j >= len(s) || s[j] != ')' {
+				continue
+			}
+			name := s[start+2 : j]
+			repl, ok := env[name]
+			if !ok {
+				continue
+			}
+			s = s[:start] + repl + s[j+1:]
+			changed = true
+			break
+		}
+		if !changed {
+			break
+		}
+	}
+	return s
+}
+
+func isSwiftIdentByte(c byte, first bool) bool {
+	if first {
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+	}
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9')
 }

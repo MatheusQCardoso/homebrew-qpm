@@ -149,14 +149,8 @@ func SparseClone(ctx context.Context, r Runner, dstDir string, opt SparseCloneOp
 		return err
 	}
 
-	if opt.Ref != "" {
-		if _, err := r.Run(ctx, dstDir, "checkout", opt.Ref); err != nil {
-			return err
-		}
-	} else {
-		if _, err := r.Run(ctx, dstDir, "checkout"); err != nil {
-			return err
-		}
+	if err := checkoutWithOptionalVTag(ctx, r, dstDir, opt.Ref); err != nil {
+		return err
 	}
 
 	return nil
@@ -171,14 +165,61 @@ func EnsureSparsePaths(ctx context.Context, r Runner, repoDir string, ref string
 	if _, err := r.Run(ctx, repoDir, sparseCheckoutArgs...); err != nil {
 		return err
 	}
-	if ref != "" {
-		if _, err := r.Run(ctx, repoDir, "checkout", ref); err != nil {
-			return err
-		}
-	} else {
-		if _, err := r.Run(ctx, repoDir, "checkout"); err != nil {
-			return err
-		}
+	return checkoutWithOptionalVTag(ctx, r, repoDir, ref)
+}
+
+// checkoutWithOptionalVTag runs `git checkout <ref>` or `git checkout` when ref is empty.
+// If ref looks like a semver tag without a leading "v" and checkout fails because the ref
+// is missing, it retries with "v"+ref (many GitHub projects tag releases as v1.2.3 only).
+func checkoutWithOptionalVTag(ctx context.Context, r Runner, repoDir string, ref string) error {
+	if ref == "" {
+		_, err := r.Run(ctx, repoDir, "checkout")
+		return err
+	}
+	_, err := r.Run(ctx, repoDir, "checkout", ref)
+	if err == nil {
+		return nil
+	}
+	alt := vPrefixedTagAlternate(ref, err.Error())
+	if alt == "" {
+		return err
+	}
+	if _, err2 := r.Run(ctx, repoDir, "checkout", alt); err2 != nil {
+		return fmt.Errorf("%w (also tried %q: %v)", err, alt, err2)
 	}
 	return nil
+}
+
+// vPrefixedTagAlternate returns "v"+ref when checkout likely failed because the tag uses a
+// leading "v" on the remote (e.g. v6.13.3 vs 6.13.3 in Package.swift).
+func vPrefixedTagAlternate(ref string, errMsg string) string {
+	if ref == "" {
+		return ""
+	}
+	if strings.HasPrefix(ref, "v") || strings.HasPrefix(ref, "V") {
+		return ""
+	}
+	if strings.Contains(ref, "/") {
+		return ""
+	}
+	if looksLikeGitObjectName(ref) {
+		return ""
+	}
+	lower := strings.ToLower(errMsg)
+	if !strings.Contains(lower, "did not match") && !strings.Contains(lower, "unknown revision") {
+		return ""
+	}
+	return "v" + ref
+}
+
+func looksLikeGitObjectName(s string) bool {
+	if len(s) < 7 || len(s) > 40 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
