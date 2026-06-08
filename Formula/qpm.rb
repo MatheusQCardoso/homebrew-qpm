@@ -12,10 +12,10 @@ class Qpm < Formula
 
   if Hardware::CPU.arm?
     url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/#{VERSION_STRING}/qpm-#{VERSION_STRING}-darwin-arm64.tar.gz"
-    sha256 "d0ddef8eadff356869eb9be2fbb02b875882caa96326d63ed3ea86ba50a0c477"
+    sha256 "35f54e177301f81ed67f501df0d646634966b8fe0f258d1c8a38229fd4a5d7f6"
   else
     url "https://github.com/MatheusQCardoso/homebrew-qpm/releases/download/#{VERSION_STRING}/qpm-#{VERSION_STRING}-darwin-amd64.tar.gz"
-    sha256 "d068fc5dffb6b87251bd6595bb8dddc6ebdb814bae6a58ced3aba082f9253eb1"
+    sha256 "74b9d9f23e732c4a3bae836fa078ef29aa3d2a149813946dfff6a0c98143ef0d"
   end
 
   def install
