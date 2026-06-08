@@ -1,7 +1,17 @@
+# Tools
 .vscode/
+.coder/
+.coderignore
+.stfolder/
+*syncthing*
+Makefile
+
+# Release
 old_releases/
 build/
-
 *.tar.gz
 qpm-*
-Makefile
+
+# Local
+TODO
+qpm
